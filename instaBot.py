@@ -30,7 +30,7 @@ class InstaBot:
         # GET NUMBER OF PUBLISHMENTS
         print("Getting number of publishments...")
         try:
-            driver.get(f"https://www.instagram.com/{username}/")
+            driver.get(f"https://www.instagram.com/{self.USERNAME}/")
             time.sleep(3)
             num_publishments = driver.find_elements(By.CSS_SELECTOR, "._ac2a")[0].text
             self.num_publishments = int(re.sub("(\.)|(,)", "", num_publishments)) # remove . or , from text and turning into a int
