@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
 import time
 import re
 import traceback
@@ -95,16 +96,29 @@ class InstaBot:
 
             publishments = driver.find_elements(By.CSS_SELECTOR, self.IMAGE_CLASS)
             qtd_publishments = len(publishments)
-
-            driver.execute_script("arguments[0].scrollIntoView(true);", publishments[-1]) # scroll down to last publishment showing on list
+            driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_DOWN)
+            #driver.execute_script("arguments[0].scrollIntoView(true);", publishments[-1]) # scroll down to last publishment showing on list
             time.sleep(1)
-
-            while qtd_publishments < self.num_publishments:
+            
+            count = 0
+            while qtd_publishments < self.num_publishments-2 or count < 200:
                 publishments = driver.find_elements(By.CSS_SELECTOR, self.IMAGE_CLASS)
                 qtd_publishments = len(publishments)
-                driver.execute_script("arguments[0].scrollIntoView(true);", publishments[-1])
-            
-            time.sleep(5)
+                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_DOWN)
+                #driver.execute_script("arguments[0].scrollIntoView(true);", publishments[-1])
+
+                try:
+                    driver.find_element(By.CSS_SELECTOR, "._acan._acao._acas._aj1-").click() # button to try load more publishments again
+                    time.sleep(1)
+                    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_UP)
+                    time.sleep(0.5)
+                    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_DOWN)
+                    count += 1
+                except NoSuchElementException:
+                    pass
+
+            time.sleep(3)
+            print(f"Qtd. publishments: {len(publishments)}")
             driver.quit()
         except:
             print("Error scrolling down.\n")
