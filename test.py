@@ -1,17 +1,6 @@
-from instaBot import InstaBot
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-import time
+import json
 
-SECRET_INSTA = "mickaelyoshua_insta"
-TARGET_USERNAME = "tcepb"
-CHROMEDRIVER_PATH = "chromedriver.exe"
+with open("tcepb.json", "r") as f:
+    data = json.load(f)
 
-bot = InstaBot(TARGET_USERNAME, CHROMEDRIVER_PATH, SECRET_INSTA)
-
-bot.get_publishments_data()
-
-
-
-# Last publishment loaded: https://www.instagram.com/p/yfMELws_q2/
-# Last publishment: https://www.instagram.com/p/Uhz86ms_sG/
+print(data["publishments"][0]["description"])

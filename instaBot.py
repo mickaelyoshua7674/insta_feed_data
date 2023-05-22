@@ -84,7 +84,6 @@ class InstaBot:
                 
                 description = driver.find_element(By.CSS_SELECTOR, "._a9zs").find_element(By.TAG_NAME, "h1").text
                 likes = driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
-
                 comments_obj = driver.find_elements(By.CSS_SELECTOR, "._a9ym")
                 comments = []
                 for c in comments_obj:
