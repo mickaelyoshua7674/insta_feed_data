@@ -73,23 +73,36 @@ class InstaBot:
         try:
             driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}/")
             time.sleep(3)
-            img_list = []
-            publishments = driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
+            posts = []
+            publishments_obj = driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
             
-            for p in publishments:
+            for p in publishments_obj:
                 publish = p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS)
                 publish_link = publish.get_attribute("href")
                 publish.click()
                 time.sleep(3)
                 
+                description = driver.find_element(By.CSS_SELECTOR, "._a9zs").find_element(By.TAG_NAME, "h1").text
                 likes = driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
-                img_list.append((publish_link, likes))
+
+                comments_obj = driver.find_elements(By.CSS_SELECTOR, "._a9ym")
+                comments = []
+                for c in comments_obj:
+                    comments.append(c.find_element(By.CSS_SELECTOR, "._aacl._aaco._aacu._aacx._aad7._aade").text)
+
+
+                body = {
+                    "link": publish_link,
+                    "description": description,
+                    "likes": likes,
+                    "comments": comments
+                }
+                posts.append(body)
+
                 driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
 
-                
 
-
-            last_publishment = publishments[-1].find_element(By.CSS_SELECTOR, self.IMAGE_CLASS)
+            last_publishment = publishments_obj[-1].find_element(By.CSS_SELECTOR, self.IMAGE_CLASS)
             driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
             #driver.execute_script("arguments[0].scrollIntoView(true);", publishments[-1]) # scroll down to last publishment showing on list
             time.sleep(1)
@@ -116,11 +129,9 @@ class InstaBot:
 
             #     last_publishment = new_last_publishment
             
-            with open("test.json", "w") as f:
-                json.dump(img_list, f)
-            print(len(img_list))
+            with open(f"{self.TARGET_USERNAME}.json", "w") as f:
+                json.dump({"username": self.TARGET_USERNAME, "publishments": posts}, f)
             time.sleep(3000)
-            print(f"Last publishments: {last_publishment.get_attribute('src')}")
             driver.quit()
         except:
             print("Error.\n")
