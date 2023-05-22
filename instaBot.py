@@ -8,6 +8,7 @@ import traceback
 import sys
 import boto3
 import ast
+import json
 
 def print_error():
     """Print the error message and exit script."""
@@ -19,7 +20,12 @@ class InstaBot:
     def __init__(self, target_username: str, chromedriver_path: str, name_aws_secret_insta: str) -> None:
         self.TARGET_USERNAME = target_username
         self.CHROMEDRIVER_PATH = chromedriver_path
+        self.PUBLISHMENT_CLASS = "._aabd._aa8k._al3l"
+        self.PUBLISHMENT_LINK_CLASS = ".x1i10hfl.xjbqb8w.x6umtig.x1b1mbwd.xaqea5y.xav7gou.x9f619.x1ypdohk" + \
+                                ".xt0psk2.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5" + \
+                                ".x18d9i69.xkhd6sd.x16tdsg8.x1hl2dhg.xggy1nq.x1a2a7pz._a6hd"
         self.IMAGE_CLASS = ".x5yr21d.xu96u03.x10l6tqk.x13vifvy.x87ps6o.xh8yej3"
+        self.LIKES_CLASS = ".x193iq5w.xeuugli.x1fj9vlw.x13faqbe.x1vvkbs.xt0psk2.x1i0vuye.xvs91rp.x1s688f.x5n08af.x10wh9bi.x1wdrske.x8viiok.x18hxmgj"
 
         # GET INSTA USERNAME AND PASSWORD FROM AWS SECRETS MANAGER
         print(f"Getting Insta username and password from AWS Secrets Manager's secret '{name_aws_secret_insta}'...")
@@ -33,34 +39,9 @@ class InstaBot:
         except:
             print("Error getting secrets...\n")
             print_error()
-
-        # INITIALIZING CHROME DRIVER
-        print("Initializing Chrome driver...")
-        try:
-            op = webdriver.ChromeOptions()
-            op.add_argument("headless") # don't open a Chrome window
-            driver = webdriver.Chrome(executable_path=self.CHROMEDRIVER_PATH, options=op)
-            print("Chrome driver initialized.\n")
-        except:
-            print("Error initializing Chrome driver...\n")
-            print_error()
-
-        # GET NUMBER OF PUBLISHMENTS
-        print("Getting number of publishments...")
-        try:
-            driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}/")
-            time.sleep(3)
-            num_publishments = driver.find_elements(By.CSS_SELECTOR, "._ac2a")[0].text
-            self.num_publishments = int(re.sub("(\.)|(,)", "", num_publishments)) # remove . or , from text and turning into a int
-            driver.quit()
-            print("Number of publishments loaded.\n")
-        except:
-            print("Error getting numbers...\n")
-            print_error()
-        driver.quit()
         print("\n---------------------------------Object initialized successfully---------------------------------\n")
 
-    def scroll_down(self):
+    def get_publishments_data(self):
         # INITIALIZING CHROME DRIVER
         print("Initializing Chrome driver...")
         try:
@@ -89,38 +70,59 @@ class InstaBot:
             print("    Login failed...\n")
             print_error()
 
-        print("Scrolling down...")
         try:
             driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}/")
             time.sleep(3)
+            img_list = []
+            publishments = driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
+            
+            for p in publishments:
+                publish = p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS)
+                publish_link = publish.get_attribute("href")
+                publish.click()
+                time.sleep(3)
+                
+                likes = driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
+                img_list.append((publish_link, likes))
+                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
 
-            publishments = driver.find_elements(By.CSS_SELECTOR, self.IMAGE_CLASS)
-            qtd_publishments = len(publishments)
-            driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_DOWN)
+                
+
+
+            last_publishment = publishments[-1].find_element(By.CSS_SELECTOR, self.IMAGE_CLASS)
+            driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
             #driver.execute_script("arguments[0].scrollIntoView(true);", publishments[-1]) # scroll down to last publishment showing on list
             time.sleep(1)
             
-            count = 0
-            while qtd_publishments < self.num_publishments-2 or count < 200:
-                publishments = driver.find_elements(By.CSS_SELECTOR, self.IMAGE_CLASS)
-                qtd_publishments = len(publishments)
-                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_DOWN)
-                #driver.execute_script("arguments[0].scrollIntoView(true);", publishments[-1])
+            # count = 0
+            # while count < 150:
+            #     time.sleep(1)
+            #     new_last_publishment = driver.find_elements(By.CSS_SELECTOR, self.IMAGE_CLASS)[-1]
+            #     driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+            #     #driver.execute_script("arguments[0].scrollIntoView(true);", publishments[-1])
 
-                try:
-                    driver.find_element(By.CSS_SELECTOR, "._acan._acao._acas._aj1-").click() # button to try load more publishments again
-                    time.sleep(1)
-                    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_UP)
-                    time.sleep(0.5)
-                    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_DOWN)
-                    count += 1
-                except NoSuchElementException:
-                    pass
+            #     if new_last_publishment == last_publishment:
+            #         count += 1
 
-            time.sleep(3)
-            print(f"Qtd. publishments: {len(publishments)}")
+            #     try:
+            #         driver.find_element(By.CSS_SELECTOR, "._acan._acao._acas._aj1-").click() # button to try load more publishments again
+            #         time.sleep(1)
+            #         driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_UP)
+            #         time.sleep(0.5)
+            #         driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+            #         count += 1
+            #     except NoSuchElementException:
+            #         pass
+
+            #     last_publishment = new_last_publishment
+            
+            with open("test.json", "w") as f:
+                json.dump(img_list, f)
+            print(len(img_list))
+            time.sleep(3000)
+            print(f"Last publishments: {last_publishment.get_attribute('src')}")
             driver.quit()
         except:
-            print("Error scrolling down.\n")
+            print("Error.\n")
             print_error()
         
