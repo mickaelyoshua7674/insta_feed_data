@@ -37,9 +37,6 @@ class InstaBot:
         self.COMMENTS_CLASS = "._a9ym"
         self.COMMENT_CLASS = "._aacl._aaco._aacu._aacx._aad7._aade"
 
-
-
-
         # GET INSTA USERNAME AND PASSWORD FROM AWS SECRETS MANAGER
         print(f"Getting Insta username and password from AWS Secrets Manager's secret '{name_aws_secret_insta}'...")
         try:
