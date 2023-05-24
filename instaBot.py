@@ -154,7 +154,7 @@ class InstaBot:
                             likes = driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
                         except NoSuchElementException:
                             try:
-                                likes = driver.find_element(By.CSS_SELECTOR, self.VIEWS_CLASS).text
+                                likes = driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].text
                             except NoSuchElementException:
                                 try:
                                     likes = driver.find_element(By.CSS_SELECTOR, self.LIKED_BY_CLASS).text
