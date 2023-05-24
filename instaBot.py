@@ -8,6 +8,7 @@ import sys
 import boto3
 import ast
 import json
+import re
 
 def print_error():
     """Print the error message and exit script."""
@@ -32,6 +33,13 @@ class InstaBot:
         self.LIKED_BY_CLASS = ".x1lliihq.x1plvlek.xryxfnj.x1n2onr6.x193iq5w.xeuugli.x1fj9vlw" + \
                             ".x13faqbe.x1vvkbs.x1s928wv.xhkezso.x1gmr53x.x1cpjm7i.x1fgarty" + \
                             ".x1943h6x.x1i0vuye.xvs91rp.xo1l8bm.x5n08af.x10wh9bi.x1wdrske.x8viiok.x18hxmgj"
+        
+        self.PEOPLE_LIKED_CLASS = ".x1i10hfl.x1qjc9v5.xjbqb8w.xjqpnuy.xa49m3k.xqeqjp1.x2hbi6w.x13fuv20" + \
+                    ".xu3j5b3.x1q0q8m5.x26u7qi.x972fbf.xcfux6l.x1qhh985.xm0m39n.x9f619" + \
+                    ".x1ypdohk.xdl72j9.x2lah0s.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r" + \
+                    ".x2lwn1j.xeuugli.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x1n2onr6.x16tdsg8" + \
+                    ".x1hl2dhg.xggy1nq.x1ja2u2z.x1t137rt.x1q0g3np.x87ps6o.x1lku1pv.x1a2a7pz" + \
+                    ".xh8yej3.x193iq5w.x1lliihq.x1dm5mii.x16mil14.xiojian.x1yutycm"
         
         self.DESCRIPTION_CLASS = "._a9zs"
         self.COMMENTS_CLASS = "._a9ym"
@@ -100,17 +108,36 @@ class InstaBot:
                     description = driver.find_element(By.CSS_SELECTOR, self.DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
                 except NoSuchElementException:
                     description = ""
-                try:
-                    likes = driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
-                except NoSuchElementException:
+                t = driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
+                if re.search("like", t):
+                    likes = t
+                else:
                     try:
-                        likes = driver.find_element(By.CSS_SELECTOR, self.VIEWS_CLASS).text
+                        driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].click()
+                        time.sleep(1)
+                        likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
                     except NoSuchElementException:
                         try:
-                            likes = driver.find_element(By.CSS_SELECTOR, self.LIKED_BY_CLASS).text
-                        except:
-                            print("Error getting likes / Views / Liked By.")
-                            print_error()
+                            c = 0
+                            driver.find_element(By.LINK_TEXT, "outras pessoas").click()
+                            time.sleep(5)
+                            last = driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)[-1]
+                            driver.execute_script("arguments[0].scrollIntoView(true);", last)
+
+                            while c < 15:
+                                time.sleep(1)
+                                new_last = driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)[-1]
+                                driver.execute_script("arguments[0].scrollIntoView(true);", last)
+                                if last == new_last:
+                                    c += 1
+                                last = new_last
+                            likes = f"{len(driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS))} likes"
+                            driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
+                        except NoSuchElementException:
+                            pass
+                    except:
+                        print("Error getting likes / Views / Liked By.")
+                        print_error()
                 try:
                     comments_obj = driver.find_elements(By.CSS_SELECTOR, self.COMMENTS_CLASS)
                     comments = []
