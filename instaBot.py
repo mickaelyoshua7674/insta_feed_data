@@ -16,6 +16,167 @@ def print_error():
     print("Closing...")
     sys.exit()
 
+def init_chromedriver(CHROMEDRIVER_PATH, headless=True):
+    if headless == True:
+        print("Initializing Chrome driver...")
+        try:
+            op = webdriver.ChromeOptions()
+            op.add_argument("headless") # don't open a Chrome window
+            driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, options=op)
+            print("Chrome driver initialized.\n")
+        except:
+            print("Error initializing Chrome driver...\n")
+            print_error()
+        return driver
+    
+    elif headless == False:
+        print("Initializing Chrome driver...")
+        try:
+            # op = webdriver.ChromeOptions()
+            # op.add_argument("headless") # don't open a Chrome window
+            driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH)#, options=op)
+            print("Chrome driver initialized.\n")
+        except:
+            print("Error initializing Chrome driver...\n")
+            print_error()
+        return driver
+
+def login(driver, INSTA_USERNAME, INSTA_PASSWORD):
+    print("Entering the account...")
+    try:
+        driver.get("https://www.instagram.com/")
+        time.sleep(3)
+        login = driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
+        login.send_keys(INSTA_USERNAME) # fill username
+        passw = driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
+        passw.send_keys(INSTA_PASSWORD) # fill password
+        time.sleep(0.5)
+        passw.send_keys(Keys.ENTER) # press Enter
+        time.sleep(10)
+        print("Login successfull.\n")
+    except:
+        print("Login failed...\n")
+        print_error()
+
+def get_posts_link(driver, PUBLISHMENT_CLASS, PUBLISHMENT_LINK_CLASS):
+    links = []
+    publishments_obj = driver.find_elements(By.CSS_SELECTOR, PUBLISHMENT_CLASS)
+    for p in publishments_obj:
+        links.append(p.find_element(By.CSS_SELECTOR, PUBLISHMENT_LINK_CLASS).get_attribute("href"))
+    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+    time.sleep(2)
+
+    count = 0
+    while count < 15:
+        new_publishments_obj = driver.find_elements(By.CSS_SELECTOR, PUBLISHMENT_CLASS)
+        for p in new_publishments_obj:
+            if p not in publishments_obj:
+                links.append(p.find_element(By.CSS_SELECTOR, PUBLISHMENT_LINK_CLASS).get_attribute("href"))
+        driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+        time.sleep(2)
+
+        if publishments_obj == new_publishments_obj:
+            count += 1
+
+        publishments_obj = new_publishments_obj
+    return links
+    
+
+def get_post_description(driver, DESCRIPTION_CLASS):
+    try:
+        description = driver.find_element(By.CSS_SELECTOR, DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
+    except NoSuchElementException:
+        description = ""
+    return description
+
+def get_post_likes(driver, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS, OTHER_PEOPLE_CLASS):
+    t = driver.find_element(By.CSS_SELECTOR, LIKES_CLASS).text
+    print(f"t - {t}")
+    if re.search("like", t) or re.search("curt", t):
+        likes = t
+        print(f"Likes - {likes}")
+    else:
+        try:
+            driver.find_elements(By.CSS_SELECTOR, VIEWS_CLASS)[-1].click()
+            time.sleep(1)
+            likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
+            print(f"Views Likes - {likes}")
+        except NoSuchElementException:
+            try:
+                liked = []
+                time.sleep(1)
+                c = 0
+                driver.find_element(By.CSS_SELECTOR, OTHER_PEOPLE_CLASS).click()
+                time.sleep(5)
+                liked.append(driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS))
+                last = liked[-1]
+                #driver.execute_script("arguments[0].scrollIntoView(true);", last)
+
+                while c < 15:
+                    time.sleep(1)
+                    for f in driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS):
+                        if f not in liked:
+                            liked.append(f)
+
+                    new_last = liked[-1]
+                    driver.execute_script("arguments[0].scrollIntoView(true);", last)
+                    
+                    if last == new_last:
+                        c += 1
+                    last = new_last
+                likes = f"{len(driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS))} likes"
+                print(f"People Likes - {likes}")
+                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
+            except NoSuchElementException:
+                pass
+        except:
+            print("Error getting likes / Views / Liked By.")
+            print_error()
+        return likes
+    
+def get_post_comments(driver, COMMENTS_CLASS, COMMENT_CLASS):
+    try:
+        comments_obj = driver.find_elements(By.CSS_SELECTOR, COMMENTS_CLASS)
+        comments = []
+        for c in comments_obj:
+            comments.append(c.find_element(By.CSS_SELECTOR, COMMENT_CLASS).text)
+    except NoSuchElementException:
+        comments = []
+    return comments
+
+def get_posts_data(driver, publishments_obj, PUBLISHMENT_LINK_CLASS, DESCRIPTION_CLASS, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS, COMMENTS_CLASS, COMMENT_CLASS):
+    num_posts = 0
+    posts = []
+    for p in publishments_obj:
+        publish = p.find_element(By.CSS_SELECTOR, PUBLISHMENT_LINK_CLASS)
+        publish_link = publish.get_attribute("href")
+        num_posts += 1
+        print(f"Data collected from post: {publish_link}")
+        print(f"Number of data posts collected: {num_posts}")
+        publish.click()
+        time.sleep(1)
+
+        description = get_post_description(driver, DESCRIPTION_CLASS)
+        likes = get_post_likes(driver, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS)
+        comments = get_post_comments(driver, COMMENTS_CLASS, COMMENT_CLASS)
+
+        body = {
+            "link": publish_link,
+            "description": description,
+            "likes": likes,
+            "comments": comments
+        }
+        posts.append(body)
+
+        driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
+    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+
+def save_posts_data(TARGET_USERNAME, posts):
+    print("Saving json file...")
+    with open(f"{TARGET_USERNAME}.json", "w") as f:
+        json.dump({"username": TARGET_USERNAME, "publishments": posts}, f)
+    print("Saved.")
+
 class InstaBot:
     def __init__(self, target_username: str, chromedriver_path: str, name_aws_secret_insta: str) -> None:
         self.TARGET_USERNAME = target_username
@@ -35,11 +196,14 @@ class InstaBot:
                             ".x1943h6x.x1i0vuye.xvs91rp.xo1l8bm.x5n08af.x10wh9bi.x1wdrske.x8viiok.x18hxmgj"
         
         self.PEOPLE_LIKED_CLASS = ".x1i10hfl.x1qjc9v5.xjbqb8w.xjqpnuy.xa49m3k.xqeqjp1.x2hbi6w.x13fuv20" + \
-                    ".xu3j5b3.x1q0q8m5.x26u7qi.x972fbf.xcfux6l.x1qhh985.xm0m39n.x9f619" + \
-                    ".x1ypdohk.xdl72j9.x2lah0s.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r" + \
-                    ".x2lwn1j.xeuugli.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x1n2onr6.x16tdsg8" + \
-                    ".x1hl2dhg.xggy1nq.x1ja2u2z.x1t137rt.x1q0g3np.x87ps6o.x1lku1pv.x1a2a7pz" + \
-                    ".xh8yej3.x193iq5w.x1lliihq.x1dm5mii.x16mil14.xiojian.x1yutycm"
+                                ".xu3j5b3.x1q0q8m5.x26u7qi.x972fbf.xcfux6l.x1qhh985.xm0m39n.x9f619" + \
+                                ".x1ypdohk.xdl72j9.x2lah0s.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r" + \
+                                ".x2lwn1j.xeuugli.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x1n2onr6.x16tdsg8" + \
+                                ".x1hl2dhg.xggy1nq.x1ja2u2z.x1t137rt.x1q0g3np.x87ps6o.x1lku1pv.x1a2a7pz" + \
+                                ".xh8yej3.x193iq5w.x1lliihq.x1dm5mii.x16mil14.xiojian.x1yutycm"
+        self.OTHER_PEOPLE_CLASS = ".x1i10hfl.xjbqb8w.x6umtig.x1b1mbwd.xaqea5y.xav7gou.x9f619.x1ypdohk" + \
+                                ".xt0psk2.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5" + \
+                                ".x18d9i69.xkhd6sd.x16tdsg8.x1hl2dhg.xggy1nq.x1a2a7pz._a6hd"
         
         self.DESCRIPTION_CLASS = "._a9zs"
         self.COMMENTS_CLASS = "._a9ym"
@@ -59,174 +223,86 @@ class InstaBot:
             print_error()
         print("\n---------------------------------Object initialized successfully---------------------------------\n")
 
-    def get_publishments_data(self):
-        # INITIALIZING CHROME DRIVER
-        print("Initializing Chrome driver...")
-        try:
-            op = webdriver.ChromeOptions()
-            op.add_argument("headless") # don't open a Chrome window
-            driver = webdriver.Chrome(executable_path=self.CHROMEDRIVER_PATH, options=op)
-            print("Chrome driver initialized.\n")
-        except:
-            print("Error initializing Chrome driver...\n")
-            print_error()
+    def init_chromedriver(self, headless=True):
+        if headless == True:
+            print("Initializing Chrome driver...")
+            try:
+                op = webdriver.ChromeOptions()
+                op.add_argument("headless") # don't open a Chrome window
+                self.driver = webdriver.Chrome(executable_path=self.CHROMEDRIVER_PATH, options=op)
+                print("Chrome driver initialized.\n")
+            except:
+                print("Error initializing Chrome driver...\n")
+                print_error()
+            return self.driver
         
-        # ENTER THE ACCOUNT
-        print("   Entering the account...")
+        elif headless == False:
+            print("Initializing Chrome driver...")
+            try:
+                # op = webdriver.ChromeOptions()
+                # op.add_argument("headless") # don't open a Chrome window
+                self.driver = webdriver.Chrome(executable_path=self.CHROMEDRIVER_PATH)#, options=op)
+                print("Chrome driver initialized.\n")
+            except:
+                print("Error initializing Chrome driver...\n")
+                print_error()
+            return self.driver
+
+    def login(self):
+        print("Entering the account...")
         try:
-            driver.get("https://www.instagram.com/")
-            time.sleep(4)
-            login = driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
+            self.driver.get("https://www.instagram.com/")
+            time.sleep(3)
+            login = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
             login.send_keys(self.INSTA_USERNAME) # fill username
-            passw = driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
+            passw = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
             passw.send_keys(self.INSTA_PASSWORD) # fill password
             time.sleep(0.5)
             passw.send_keys(Keys.ENTER) # press Enter
             time.sleep(10)
-            print("    Login successfull.\n")
+            print("Login successfull.\n")
         except:
-            print("    Login failed...\n")
+            print("Login failed...\n")
             print_error()
 
-        print("Getting posts data...")
+    def get_posts_link(self):
+        self.driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}")
+        time.sleep(3)
+        links = []
+        publishments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
+        for p in publishments_obj:
+            links.append(p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS).get_attribute("href"))
+        self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+        time.sleep(2)
+
+        count = 0
+        while count < 15:
+            new_publishments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
+            for p in new_publishments_obj:
+                if p not in publishments_obj:
+                    links.append(p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS).get_attribute("href"))
+            self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+            time.sleep(2)
+
+            if publishments_obj == new_publishments_obj:
+                count += 1
+
+            publishments_obj = new_publishments_obj
+        return links
+    
+    def get_post_description(self):
         try:
-            num_posts = 0
-            driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}/")
-            time.sleep(3)
-            posts = []
-            publishments_obj = driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
-            
-            for p in publishments_obj:
-                publish = p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS)
-                publish_link = publish.get_attribute("href")
-                num_posts += 1
-                print(f"Data collected from post: {publish_link}")
-                print(f"Number of data posts collected: {num_posts}")
-                publish.click()
-                time.sleep(1)
-                try:
-                    description = driver.find_element(By.CSS_SELECTOR, self.DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
-                except NoSuchElementException:
-                    description = ""
-                t = driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
-                if re.search("like", t):
-                    likes = t
-                else:
-                    try:
-                        driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].click()
-                        time.sleep(1)
-                        likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
-                    except NoSuchElementException:
-                        try:
-                            c = 0
-                            driver.find_element(By.LINK_TEXT, "outras pessoas").click()
-                            time.sleep(5)
-                            last = driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)[-1]
-                            driver.execute_script("arguments[0].scrollIntoView(true);", last)
-
-                            while c < 15:
-                                time.sleep(1)
-                                new_last = driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)[-1]
-                                driver.execute_script("arguments[0].scrollIntoView(true);", last)
-                                if last == new_last:
-                                    c += 1
-                                last = new_last
-                            likes = f"{len(driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS))} likes"
-                            driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
-                        except NoSuchElementException:
-                            pass
-                    except:
-                        print("Error getting likes / Views / Liked By.")
-                        print_error()
-                try:
-                    comments_obj = driver.find_elements(By.CSS_SELECTOR, self.COMMENTS_CLASS)
-                    comments = []
-                    for c in comments_obj:
-                        comments.append(c.find_element(By.CSS_SELECTOR, self.COMMENT_CLASS).text)
-                except NoSuchElementException:
-                    comments = []
-
-                body = {
-                    "link": publish_link,
-                    "description": description,
-                    "likes": likes,
-                    "comments": comments
-                }
-                posts.append(body)
-
-                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
-            driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-            
-            count_load_posts = 0
-            count_last_post = 0
-            while count_load_posts < 150 and count_last_post < 150:
-                time.sleep(1)
-                new_publishments_obj = driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
-            
-                for p in new_publishments_obj:
-                    if p not in publishments_obj:
-                        publish = p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS)
-                        publish_link = publish.get_attribute("href")
-                        num_posts += 1
-                        print(f"Data collected from post: {publish_link}")
-                        print(f"Number of data posts collected: {num_posts}")
-                        publish.click()
-                        time.sleep(1)
-                        
-                        try:
-                            description = driver.find_element(By.CSS_SELECTOR, self.DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
-                        except NoSuchElementException:
-                            description = ""
-                        try:
-                            likes = driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
-                        except NoSuchElementException:
-                            try:
-                                likes = driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].text
-                            except NoSuchElementException:
-                                try:
-                                    likes = driver.find_element(By.CSS_SELECTOR, self.LIKED_BY_CLASS).text
-                                except:
-                                    print("Error getting likes / Views / Liked By.")
-                                    print_error()
-
-                        try:
-                            comments_obj = driver.find_elements(By.CSS_SELECTOR, self.COMMENTS_CLASS)
-                            comments = []
-                            for c in comments_obj:
-                                comments.append(c.find_element(By.CSS_SELECTOR, self.COMMENT_CLASS).text)
-                        except NoSuchElementException:
-                            comments = []
-
-                        body = {
-                            "link": publish_link,
-                            "description": description,
-                            "likes": likes,
-                            "comments": comments
-                        }
-                        posts.append(body)
-
-                        driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
-                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-
-                if publishments_obj[-1] == new_publishments_obj[-1]:
-                    count_last_post += 1
-                publishments_obj = new_publishments_obj
-
-                try:
-                    driver.find_element(By.CSS_SELECTOR, "._acan._acao._acas._aj1-").click() # button to try load more publishments again
-                    time.sleep(1)
-                    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.PAGE_UP)
-                    time.sleep(0.5)
-                    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-                    count_load_posts += 1
-                except NoSuchElementException:
-                    pass
-            print("Saving json file...")
-            with open(f"{self.TARGET_USERNAME}.json", "w") as f:
-                json.dump({"username": self.TARGET_USERNAME, "publishments": posts}, f)
-            print("Saved.")
-            driver.quit()
-        except:
-            print("Error getting posts data.\n")
-            print_error()
-        
+            description = self.driver.find_element(By.CSS_SELECTOR, self.DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
+        except NoSuchElementException:
+            description = ""
+        return description
+    
+    def get_post_comments(self):
+        try:
+            comments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.COMMENTS_CLASS)
+            comments = []
+            for c in comments_obj:
+                comments.append(c.find_element(By.CSS_SELECTOR, self.COMMENT_CLASS).text)
+        except NoSuchElementException:
+            comments = []
+        return comments

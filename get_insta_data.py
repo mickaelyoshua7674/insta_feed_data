@@ -7,7 +7,9 @@ CHROMEDRIVER_PATH = "chromedriver.exe"
 
 start = time.time()
 bot_tcepb = InstaBot(USERNAME_TCEPB, CHROMEDRIVER_PATH, SECRET_INSTA)
-bot_tcepb.get_publishments_data()
-print(f"\nTime of execution: {time.time() - start}s / {(time.time() - start)/60}min / {((time.time() - start)/60)/60}hrs")
+bot_tcepb.init_chromedriver(headless=False)
+bot_tcepb.login()
+links = bot_tcepb.get_posts_link()
 
-# Last publishment: https://www.instagram.com/p/Uhz86ms_sG/
+print(len(links))
+print(links)
