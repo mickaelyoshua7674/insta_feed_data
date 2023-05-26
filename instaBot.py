@@ -90,49 +90,51 @@ def get_post_description(driver, DESCRIPTION_CLASS):
     return description
 
 def get_post_likes(driver, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS, OTHER_PEOPLE_CLASS):
-    t = driver.find_element(By.CSS_SELECTOR, LIKES_CLASS).text
-    print(f"t - {t}")
-    if re.search("like", t) or re.search("curt", t):
-        likes = t
-        print(f"Likes - {likes}")
-    else:
-        try:
-            driver.find_elements(By.CSS_SELECTOR, VIEWS_CLASS)[-1].click()
-            time.sleep(1)
-            likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
-            print(f"Views Likes - {likes}")
-        except NoSuchElementException:
-            try:
-                liked = []
-                time.sleep(1)
-                c = 0
-                driver.find_element(By.CSS_SELECTOR, OTHER_PEOPLE_CLASS).click()
-                time.sleep(5)
-                liked.append(driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS))
-                last = liked[-1]
-                #driver.execute_script("arguments[0].scrollIntoView(true);", last)
+    try:
+        t = driver.find_element(By.CSS_SELECTOR, LIKES_CLASS).text
+        print(f"t - {t}")
+        if re.search("like", t) or re.search("curti", t):
+            likes = t
+            print(f"Likes - {likes}")
+        else:
+            liked_by_link = [i.get_attribute("href") for i in driver.find_elements(By.CSS_SELECTOR, OTHER_PEOPLE_CLASS) if re.search("liked_by", i.get_attribute("href"))][0]
+            driver.get(liked_by_link)
+            time.sleep(3)
+            people = []
+            people_liked_obj = driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS)
+            for p in people_liked_obj:
+                people.append(p)
+            driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+            time.sleep(2)
 
-                while c < 15:
-                    time.sleep(1)
-                    for f in driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS):
-                        if f not in liked:
-                            liked.append(f)
+            count = 0
+            while count < 10:
+                new_people_liked_obj = driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS)
+                for p in new_people_liked_obj:
+                    if p not in people_liked_obj:
+                        people.append(p)
+                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+                time.sleep(2)
 
-                    new_last = liked[-1]
-                    driver.execute_script("arguments[0].scrollIntoView(true);", last)
-                    
-                    if last == new_last:
-                        c += 1
-                    last = new_last
-                likes = f"{len(driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS))} likes"
-                print(f"People Likes - {likes}")
-                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
-            except NoSuchElementException:
-                pass
-        except:
-            print("Error getting likes / Views / Liked By.")
-            print_error()
-        return likes
+                if people_liked_obj == new_people_liked_obj:
+                    count += 1
+                
+                people_liked_obj = new_people_liked_obj
+            
+            likes = f"{len(people)} curtidas"
+            print(f"People likes - {likes}")
+
+    except NoSuchElementException:
+        driver.find_elements(By.CSS_SELECTOR, VIEWS_CLASS)[-1].click()
+        time.sleep(1)
+        likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
+        print(f"Views Likes - {likes}")
+        
+    except:
+        print("Error getting likes / Views / Liked By.")
+        print_error()
+
+    return likes
     
 def get_post_comments(driver, COMMENTS_CLASS, COMMENT_CLASS):
     try:
@@ -306,3 +308,50 @@ class InstaBot:
         except NoSuchElementException:
             comments = []
         return comments
+    
+    def get_post_likes(self):
+        try:
+            t = self.driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
+            print(f"t - {t}")
+            if re.search("like", t) or re.search("curti", t):
+                likes = t
+                print(f"Likes - {likes}")
+            else:
+                liked_by_link = [i.get_attribute("href") for i in self.driver.find_elements(By.CSS_SELECTOR, self.OTHER_PEOPLE_CLASS) if re.search("liked_by", i.get_attribute("href"))][0]
+                self.driver.get(liked_by_link)
+                time.sleep(3)
+                people = []
+                people_liked_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)
+                for p in people_liked_obj:
+                    people.append(p)
+                self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+                time.sleep(2)
+
+                count = 0
+                while count < 10:
+                    new_people_liked_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)
+                    for p in new_people_liked_obj:
+                        if p not in people_liked_obj:
+                            people.append(p)
+                    self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
+                    time.sleep(2)
+
+                    if people_liked_obj == new_people_liked_obj:
+                        count += 1
+                    
+                    people_liked_obj = new_people_liked_obj
+                
+                likes = f"{len(people)} curtidas"
+                print(f"People likes - {likes}")
+
+        except NoSuchElementException:
+            self.driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].click()
+            time.sleep(1)
+            likes = self.driver.find_element(By.CSS_SELECTOR, "._aauu").text
+            print(f"Views Likes - {likes}")
+            
+        except:
+            print("Error getting likes / Views / Liked By.")
+            print_error()
+            
+        return likes

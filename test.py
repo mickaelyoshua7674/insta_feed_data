@@ -40,23 +40,23 @@ def print_error():
 
 driver = init_chromedriver(CHROMEDRIVER_PATH, headless=False)
 
-login(driver, "mickaelyoshua", "*****")
+login(driver, "mickaelyoshua", "***")
 
 time.sleep(3)
 
-links = ["https://www.instagram.com/p/Cr1aiWnpSSG/", "https://www.instagram.com/p/Cr3p3-trE0o/", "https://www.instagram.com/p/CsCNwOFppsb/", "https://www.instagram.com/p/CsOnaAMr5Mu/"]
+links = ["https://www.instagram.com/p/Cr1aiWnpSSG/", "https://www.instagram.com/p/CsCNwOFppsb/", "https://www.instagram.com/reel/BCEawKys_rF/"]
 
 likes = []
 for l in links:
     driver.get(l)
     time.sleep(3)
-    t = driver.find_element(By.CSS_SELECTOR, LIKES_CLASS).text
-    print(f"t - {t}")
-    if re.search("like", t) or re.search("curti", t):
-        likes = t
-        print(f"Likes - {likes}")
-    else:
-        try:
+    try:
+        t = driver.find_element(By.CSS_SELECTOR, LIKES_CLASS).text
+        print(f"t - {t}")
+        if re.search("like", t) or re.search("curti", t):
+            likes = t
+            print(f"Likes - {likes}")
+        else:
             liked_by_link = [i.get_attribute("href") for i in driver.find_elements(By.CSS_SELECTOR, OTHER_PEOPLE_CLASS) if re.search("liked_by", i.get_attribute("href"))][0]
             driver.get(liked_by_link)
             time.sleep(3)
@@ -83,36 +83,16 @@ for l in links:
             
             likes = f"{len(people)} curtidas"
             print(f"People likes - {likes}")
-            # liked.append(driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS))
-            # last = liked[-1]
-            #driver.execute_script("arguments[0].scrollIntoView(true);", last)
 
-        #     while c < 15:
-        #         time.sleep(1)
-        #         for f in driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS):
-        #             if f not in liked:
-        #                 liked.append(f)
-
-        #         new_last = liked[-1]
-        #         driver.execute_script("arguments[0].scrollIntoView(true);", last)
-                
-        #         if last == new_last:
-        #             c += 1
-        #         last = new_last
-        #     likes = f"{len(driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS))} likes"
-        #     print(f"People Likes - {likes}")
-        #     driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
-        # except NoSuchElementException:
-        #     try:
-        #         driver.find_elements(By.CSS_SELECTOR, VIEWS_CLASS)[-1].click()
-        #         time.sleep(1)
-        #         likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
-        #         print(f"Views Likes - {likes}")
-        #     except NoSuchElementException:
-        #         pass
-        except:
-            print("Error getting likes / Views / Liked By.")
-            print_error()
+    except NoSuchElementException:
+        driver.find_elements(By.CSS_SELECTOR, VIEWS_CLASS)[-1].click()
+        time.sleep(1)
+        likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
+        print(f"Views Likes - {likes}")
+        
+    except:
+        print("Error getting likes / Views / Liked By.")
+        print_error()
 
 # print(len(likes))
 # print(likes)
