@@ -15,73 +15,7 @@ def print_error():
     traceback.print_exc()
     print("Closing...")
     sys.exit()
-
-def init_chromedriver(CHROMEDRIVER_PATH, headless=True):
-    if headless == True:
-        print("Initializing Chrome driver...")
-        try:
-            op = webdriver.ChromeOptions()
-            op.add_argument("headless") # don't open a Chrome window
-            driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, options=op)
-            print("Chrome driver initialized.\n")
-        except:
-            print("Error initializing Chrome driver...\n")
-            print_error()
-        return driver
     
-    elif headless == False:
-        print("Initializing Chrome driver...")
-        try:
-            # op = webdriver.ChromeOptions()
-            # op.add_argument("headless") # don't open a Chrome window
-            driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH)#, options=op)
-            print("Chrome driver initialized.\n")
-        except:
-            print("Error initializing Chrome driver...\n")
-            print_error()
-        return driver
-
-def login(driver, INSTA_USERNAME, INSTA_PASSWORD):
-    print("Entering the account...")
-    try:
-        driver.get("https://www.instagram.com/")
-        time.sleep(3)
-        login = driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
-        login.send_keys(INSTA_USERNAME) # fill username
-        passw = driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
-        passw.send_keys(INSTA_PASSWORD) # fill password
-        time.sleep(0.5)
-        passw.send_keys(Keys.ENTER) # press Enter
-        time.sleep(10)
-        print("Login successfull.\n")
-    except:
-        print("Login failed...\n")
-        print_error()
-
-def get_posts_link(driver, PUBLISHMENT_CLASS, PUBLISHMENT_LINK_CLASS):
-    links = []
-    publishments_obj = driver.find_elements(By.CSS_SELECTOR, PUBLISHMENT_CLASS)
-    for p in publishments_obj:
-        links.append(p.find_element(By.CSS_SELECTOR, PUBLISHMENT_LINK_CLASS).get_attribute("href"))
-    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-    time.sleep(2)
-
-    count = 0
-    while count < 15:
-        new_publishments_obj = driver.find_elements(By.CSS_SELECTOR, PUBLISHMENT_CLASS)
-        for p in new_publishments_obj:
-            if p not in publishments_obj:
-                links.append(p.find_element(By.CSS_SELECTOR, PUBLISHMENT_LINK_CLASS).get_attribute("href"))
-        driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-        time.sleep(2)
-
-        if publishments_obj == new_publishments_obj:
-            count += 1
-
-        publishments_obj = new_publishments_obj
-    return links
-    
-
 def get_post_description(driver, DESCRIPTION_CLASS):
     try:
         description = driver.find_element(By.CSS_SELECTOR, DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
@@ -92,10 +26,8 @@ def get_post_description(driver, DESCRIPTION_CLASS):
 def get_post_likes(driver, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS, OTHER_PEOPLE_CLASS):
     try:
         t = driver.find_element(By.CSS_SELECTOR, LIKES_CLASS).text
-        print(f"t - {t}")
         if re.search("like", t) or re.search("curti", t):
             likes = t
-            print(f"Likes - {likes}")
         else:
             liked_by_link = [i.get_attribute("href") for i in driver.find_elements(By.CSS_SELECTOR, OTHER_PEOPLE_CLASS) if re.search("liked_by", i.get_attribute("href"))][0]
             driver.get(liked_by_link)
@@ -122,13 +54,11 @@ def get_post_likes(driver, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS, OTHER_P
                 people_liked_obj = new_people_liked_obj
             
             likes = f"{len(people)} curtidas"
-            print(f"People likes - {likes}")
 
     except NoSuchElementException:
         driver.find_elements(By.CSS_SELECTOR, VIEWS_CLASS)[-1].click()
         time.sleep(1)
         likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
-        print(f"Views Likes - {likes}")
         
     except:
         print("Error getting likes / Views / Liked By.")
@@ -236,7 +166,6 @@ class InstaBot:
             except:
                 print("Error initializing Chrome driver...\n")
                 print_error()
-            return self.driver
         
         elif headless == False:
             print("Initializing Chrome driver...")
@@ -248,7 +177,6 @@ class InstaBot:
             except:
                 print("Error initializing Chrome driver...\n")
                 print_error()
-            return self.driver
 
     def login(self):
         print("Entering the account...")
@@ -266,6 +194,9 @@ class InstaBot:
         except:
             print("Login failed...\n")
             print_error()
+
+    def go_to_link(self, l):
+        self.driver.get(l)
 
     def get_posts_link(self):
         self.driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}")
@@ -312,10 +243,8 @@ class InstaBot:
     def get_post_likes(self):
         try:
             t = self.driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
-            print(f"t - {t}")
             if re.search("like", t) or re.search("curti", t):
                 likes = t
-                print(f"Likes - {likes}")
             else:
                 liked_by_link = [i.get_attribute("href") for i in self.driver.find_elements(By.CSS_SELECTOR, self.OTHER_PEOPLE_CLASS) if re.search("liked_by", i.get_attribute("href"))][0]
                 self.driver.get(liked_by_link)
@@ -342,7 +271,6 @@ class InstaBot:
                     people_liked_obj = new_people_liked_obj
                 
                 likes = f"{len(people)} curtidas"
-                print(f"People likes - {likes}")
 
         except NoSuchElementException:
             self.driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].click()

@@ -8,7 +8,7 @@ CHROMEDRIVER_PATH = "chromedriver.exe"
 
 start = time.time()
 bot_tcepb = InstaBot(USERNAME_TCEPB, CHROMEDRIVER_PATH, SECRET_INSTA)
-bot_tcepb.init_chromedriver(headless=False)
+bot_tcepb.init_chromedriver(headless=True)
 bot_tcepb.login()
 links = bot_tcepb.get_posts_link()
 with open(f"{USERNAME_TCEPB}_posts_link.json", "w") as f:
