@@ -17,6 +17,7 @@ bot_tcepb.login()
 
 posts = []
 for l in links:
+    print(f"Collecting data from {l}...")
     bot_tcepb.go_to_link(l)
     time.sleep(3)
     description = bot_tcepb.get_post_description()
@@ -51,6 +52,7 @@ bot_pref_jampa.login()
 
 posts = []
 for l in links:
+    print(f"Collecting data from {l}...")
     bot_pref_jampa.go_to_link(l)
     time.sleep(3)
     description = bot_pref_jampa.get_post_description()
