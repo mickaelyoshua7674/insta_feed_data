@@ -30,6 +30,8 @@ for l in links:
     })
     print(f"Data collected from {l}")
 
+bot_tcepb.driver_quit()
+
 with open(f"{USERNAME_TCEPB}_posts_data.json", "w") as f:
     json.dump(posts, f)
 

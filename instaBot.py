@@ -198,6 +198,9 @@ class InstaBot:
     def go_to_link(self, l):
         self.driver.get(l)
 
+    def driver_quit(self):
+        self.driver.quit()
+
     def get_posts_link(self):
         self.driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}")
         time.sleep(3)
