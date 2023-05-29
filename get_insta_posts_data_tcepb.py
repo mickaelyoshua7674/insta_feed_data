@@ -14,12 +14,6 @@ with open(f"{USERNAME}_posts_link.json", "r") as f:
     links = json.load(f)
 print("Posts links collected.\n")
 
-# INITIALIZING INSTABOT
-start = time.time()
-bot = InstaBot(USERNAME, CHROMEDRIVER_PATH, SECRET_INSTA)
-bot.init_chromedriver(headless=True)
-bot.login()
-
 # GET LINKS WITH DATA ALREADY COLLECTED
 print("Getting link with data collected...")
 if os.path.exists(f"{USERNAME}_posts_data.json"): # if there is data collected
@@ -32,6 +26,12 @@ else: # if there is no data collected
         json.dump([], f)
     collected_links = []
     print("There is no data collected.\n")
+
+# INITIALIZING INSTABOT
+start = time.time()
+bot = InstaBot(USERNAME, CHROMEDRIVER_PATH, SECRET_INSTA)
+bot.init_chromedriver(headless=True)
+bot.login()
 
 # GET POSTS DATA
 for l in links:
