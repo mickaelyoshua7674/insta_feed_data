@@ -7,7 +7,6 @@ import traceback
 import sys
 import boto3
 import ast
-import json
 import re
 
 def print_error():
@@ -16,98 +15,6 @@ def print_error():
     print("Closing...")
     sys.exit()
     
-def get_post_description(driver, DESCRIPTION_CLASS):
-    try:
-        description = driver.find_element(By.CSS_SELECTOR, DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
-    except NoSuchElementException:
-        description = ""
-    return description
-
-def get_post_likes(driver, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS, OTHER_PEOPLE_CLASS):
-    try:
-        t = driver.find_element(By.CSS_SELECTOR, LIKES_CLASS).text
-        if re.search("like", t) or re.search("curti", t):
-            likes = t
-        else:
-            liked_by_link = [i.get_attribute("href") for i in driver.find_elements(By.CSS_SELECTOR, OTHER_PEOPLE_CLASS) if re.search("liked_by", i.get_attribute("href"))][0]
-            driver.get(liked_by_link)
-            time.sleep(3)
-            people = []
-            people_liked_obj = driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS)
-            for p in people_liked_obj:
-                people.append(p)
-            driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-            time.sleep(2)
-
-            count = 0
-            while count < 10:
-                new_people_liked_obj = driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS)
-                for p in new_people_liked_obj:
-                    if p not in people_liked_obj:
-                        people.append(p)
-                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-                time.sleep(2)
-
-                if people_liked_obj == new_people_liked_obj:
-                    count += 1
-                
-                people_liked_obj = new_people_liked_obj
-            
-            likes = f"{len(people)} curtidas"
-
-    except NoSuchElementException:
-        driver.find_elements(By.CSS_SELECTOR, VIEWS_CLASS)[-1].click()
-        time.sleep(1)
-        likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
-        
-    except:
-        print("Error getting likes / Views / Liked By.")
-        print_error()
-
-    return likes
-    
-def get_post_comments(driver, COMMENTS_CLASS, COMMENT_CLASS):
-    try:
-        comments_obj = driver.find_elements(By.CSS_SELECTOR, COMMENTS_CLASS)
-        comments = []
-        for c in comments_obj:
-            comments.append(c.find_element(By.CSS_SELECTOR, COMMENT_CLASS).text)
-    except NoSuchElementException:
-        comments = []
-    return comments
-
-def get_posts_data(driver, publishments_obj, PUBLISHMENT_LINK_CLASS, DESCRIPTION_CLASS, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS, COMMENTS_CLASS, COMMENT_CLASS):
-    num_posts = 0
-    posts = []
-    for p in publishments_obj:
-        publish = p.find_element(By.CSS_SELECTOR, PUBLISHMENT_LINK_CLASS)
-        publish_link = publish.get_attribute("href")
-        num_posts += 1
-        print(f"Data collected from post: {publish_link}")
-        print(f"Number of data posts collected: {num_posts}")
-        publish.click()
-        time.sleep(1)
-
-        description = get_post_description(driver, DESCRIPTION_CLASS)
-        likes = get_post_likes(driver, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS)
-        comments = get_post_comments(driver, COMMENTS_CLASS, COMMENT_CLASS)
-
-        body = {
-            "link": publish_link,
-            "description": description,
-            "likes": likes,
-            "comments": comments
-        }
-        posts.append(body)
-
-        driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
-    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-
-def save_posts_data(TARGET_USERNAME, posts):
-    print("Saving json file...")
-    with open(f"{TARGET_USERNAME}.json", "w") as f:
-        json.dump({"username": TARGET_USERNAME, "publishments": posts}, f)
-    print("Saved.")
 
 class InstaBot:
     def __init__(self, target_username: str, chromedriver_path: str, name_aws_secret_insta: str) -> None:
@@ -156,8 +63,8 @@ class InstaBot:
         print("\n---------------------------------Object initialized successfully---------------------------------\n")
 
     def init_chromedriver(self, headless=True):
+        print("Initializing Chrome driver...")
         if headless == True:
-            print("Initializing Chrome driver...")
             try:
                 op = webdriver.ChromeOptions()
                 op.add_argument("headless") # don't open a Chrome window
@@ -168,7 +75,6 @@ class InstaBot:
                 print_error()
         
         elif headless == False:
-            print("Initializing Chrome driver...")
             try:
                 # op = webdriver.ChromeOptions()
                 # op.add_argument("headless") # don't open a Chrome window
