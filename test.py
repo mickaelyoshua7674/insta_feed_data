@@ -1,12 +1,5 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-import time
+import requests
 
-CHROMEDRIVER_PATH = "chromedriver.exe"
-
-driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH)
-driver.get("chrome://settings/clearBrowserData")
-time.sleep(3)
-driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ENTER)
-time.sleep(100)
+response = requests.get("https://www.instagram.com/p/CMerJgap0dr/")
+print(response.status_code)
+print(response.text)

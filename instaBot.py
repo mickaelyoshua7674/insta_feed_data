@@ -185,7 +185,6 @@ class InstaBot:
             self.driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].click()
             time.sleep(1)
             likes = self.driver.find_element(By.CSS_SELECTOR, "._aauu").text
-            print(f"Views Likes - {likes}")
             
         except:
             print("Error getting likes / Views / Liked By.")
