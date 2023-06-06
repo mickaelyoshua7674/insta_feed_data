@@ -38,7 +38,7 @@ for l in links:
     if l not in collected_links: # if it wasn't collected
         print(f"Collecting data from {l} ...")
         bot.go_to_link(l)
-        time.sleep(3)
+        time.sleep(30)
         description = bot.get_post_description()
         comments = bot.get_post_comments()
         likes = bot.get_post_likes()
