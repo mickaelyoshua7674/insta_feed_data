@@ -44,6 +44,8 @@ class InstaBot:
                                 ".xt0psk2.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5" + \
                                 ".x18d9i69.xkhd6sd.x16tdsg8.x1hl2dhg.xggy1nq.x1a2a7pz._a6hd"
         
+        self.POST_BODY_CLASS = ".x6s0dn4.x78zum5.xdt5ytf.xdj266r.xkrivgy.xat24cr.x1gryazu.x1n2onr6.xh8yej3"
+
         self.DESCRIPTION_CLASS = "._a9zs"
         self.COMMENTS_CLASS = "._a9ym"
         self.COMMENT_CLASS = "._aacl._aaco._aacu._aacx._aad7._aade"
@@ -61,6 +63,13 @@ class InstaBot:
             print("Error getting secrets...\n")
             print_error()
         print("\n---------------------------------Object initialized successfully---------------------------------\n")
+
+    def check_page_post_loaded(self):
+        try:
+            self.driver.find_element(By.CSS_SELECTOR, self.POST_BODY_CLASS)
+            return True
+        except NoSuchElementException:
+            return False
 
     def init_chromedriver(self, headless=True):
         print("Initializing Chrome driver...")

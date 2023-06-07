@@ -1,7 +1,9 @@
 from instaBot import InstaBot
+from selenium.common.exceptions import NoSuchElementException
 import json
 import time
 import os
+import random
 
 SECRET_INSTA = "mickaelyoshua_insta"
 CHROMEDRIVER_PATH = "chromedriver.exe"
@@ -38,10 +40,19 @@ for l in links:
     if l not in collected_links: # if it wasn't collected
         print(f"Collecting data from {l} ...")
         bot.go_to_link(l)
-        time.sleep(3)
-        description = bot.get_post_description()
-        comments = bot.get_post_comments()
-        likes = bot.get_post_likes()
+        time.sleep(random.uniform(5,31))
+        if bot.check_page_post_loaded():
+            description = bot.get_post_description()
+            comments = bot.get_post_comments()
+            likes = bot.get_post_likes()
+        else:
+            print("\nTime for reload page - 5min...\n")
+            time.sleep(5*60)
+            bot.go_to_link(l)
+            time.sleep(5)
+            description = bot.get_post_description()
+            comments = bot.get_post_comments()
+            likes = bot.get_post_likes()
 
         body = {
             "link": l,
