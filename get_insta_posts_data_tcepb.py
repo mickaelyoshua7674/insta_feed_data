@@ -1,5 +1,4 @@
 from instaBot import InstaBot
-from selenium.common.exceptions import NoSuchElementException
 import json
 import time
 import os
