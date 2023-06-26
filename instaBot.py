@@ -46,6 +46,11 @@ class InstaBot:
         
         self.POST_BODY_CLASS = ".x6s0dn4.x78zum5.xdt5ytf.xdj266r.xkrivgy.xat24cr.x1gryazu.x1n2onr6.xh8yej3"
 
+        self.COMMENTS_BOX = ".x9f619.x5yr21d.x10l6tqk.xh8yej3.xexx8yu.x4uap5.x18d9i69.xkhd6sd"
+        self.MORE_COMMENTS_CLASS = ".x9f619.xjbqb8w.x78zum5.x168nmei.x13lgxp2.x5pf9jr.xo71vjh.xdj266r" + \
+                                ".xat24cr.x1n2onr6.x1plvlek.xryxfnj.x1c4vz4f.x2lah0s.xdt5ytf" + \
+                                ".xqjyukv.x1qjc9v5.x1oa3qoh.xl56j7k"
+
         self.DESCRIPTION_CLASS = "._a9zs"
         self.COMMENTS_CLASS = "._a9ym"
         self.COMMENT_CLASS = "._aacl._aaco._aacu._aacx._aad7._aade"
@@ -65,13 +70,15 @@ class InstaBot:
         print("\n---------------------------------Object initialized successfully---------------------------------\n")
 
     def check_page_post_loaded(self):
+        """If elemt is found return True"""
         try:
             self.driver.find_element(By.CSS_SELECTOR, self.POST_BODY_CLASS)
             return True
         except NoSuchElementException:
             return False
 
-    def init_chromedriver(self, headless=True):
+    def init_chromedriver(self, headless: bool=True):
+        """Start the chromedriver"""
         print("Initializing Chrome driver...")
         if headless == True:
             try:
@@ -94,6 +101,7 @@ class InstaBot:
                 print_error()
 
     def login(self):
+        """Make login into account passed when initialized the object class"""
         print("Entering the account...")
         try:
             self.driver.get("https://www.instagram.com/")
@@ -110,13 +118,14 @@ class InstaBot:
             print("Login failed...\n")
             print_error()
 
-    def go_to_link(self, l):
+    def go_to_link(self, l: str):
         self.driver.get(l)
 
     def driver_quit(self):
         self.driver.quit()
 
-    def get_posts_link(self):
+    def get_posts_link(self) -> list[str]:
+        """Collect the link of all posts in profile target"""
         self.driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}")
         time.sleep(3)
         links = []
@@ -142,13 +151,26 @@ class InstaBot:
         return links
     
     def get_post_description(self):
+        """Get description from post"""
         try:
             description = self.driver.find_element(By.CSS_SELECTOR, self.DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
         except NoSuchElementException:
             description = ""
         return description
-    
-    def get_post_comments(self):
+
+    def check_more_comments(self):
+        """If elemt is found return True"""
+        try:
+            self.driver.find_element(By.CSS_SELECTOR, self.COMMENTS_BOX).find_element(By.CSS_SELECTOR, self.MORE_COMMENTS_CLASS)
+            return True
+        except NoSuchElementException:
+            return False
+
+    def get_post_comments(self) -> list[str]:
+        """load all comments and collect then"""
+        while self.check_more_comments():
+            self.driver.find_element(By.CSS_SELECTOR, self.COMMENTS_BOX).find_element(By.CSS_SELECTOR, self.MORE_COMMENTS_CLASS).click()
+            time.sleep(3)
         try:
             comments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.COMMENTS_CLASS)
             comments = []
@@ -158,7 +180,8 @@ class InstaBot:
             comments = []
         return comments
     
-    def get_post_likes(self):
+    def get_post_likes(self) -> list[str]:
+        """collect the number of likes in post"""
         try:
             t = self.driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
             if re.search("like", t) or re.search("curti", t):
@@ -188,7 +211,7 @@ class InstaBot:
                     
                     people_liked_obj = new_people_liked_obj
                 
-                likes = f"{len(people)} curtidas"
+                likes = f"{len(people)} likes"
 
         except NoSuchElementException:
             self.driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].click()
@@ -199,4 +222,4 @@ class InstaBot:
             print("Error getting likes / Views / Liked By.")
             print_error()
             
-        return likes
+        return int(likes.split(" ")[0])
