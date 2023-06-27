@@ -71,7 +71,7 @@ class InstaBot:
             print_error()
         print("\n---------------------------------Object initialized successfully---------------------------------\n")
 
-    def check_page_post_loaded(self):
+    def check_page_post_loaded(self) -> bool:
         """If element is found return True"""
         try:
             self.driver.find_element(By.CSS_SELECTOR, self.POST_BODY_CLASS)
@@ -160,7 +160,7 @@ class InstaBot:
             description = ""
         return description
 
-    def check_more_comments(self):
+    def check_more_comments(self) -> bool:
         """If element is found return True"""
         try:
             self.driver.find_element(By.CSS_SELECTOR, self.COMMENTS_BOX).find_element(By.CSS_SELECTOR, self.MORE_COMMENTS_CLASS)
@@ -182,7 +182,7 @@ class InstaBot:
             comments = []
         return comments
     
-    def get_post_likes(self) -> list[str]:
+    def get_post_likes(self) -> int:
         """collect the number of likes in post"""
         try:
             t = self.driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
@@ -226,6 +226,6 @@ class InstaBot:
             
         return int(likes.split(" ")[0])
     
-    def get_post_date(self):
-        """Get publishment date of post"""
+    def get_post_date(self) -> str:
+        """Get publishment date of post (datetime)"""
         return self.driver.find_element(By.CSS_SELECTOR, self.DATE_CLASS).find_element(By.TAG_NAME, "time").get_attribute("datetime")
