@@ -55,6 +55,8 @@ class InstaBot:
         self.COMMENTS_CLASS = "._a9ym"
         self.COMMENT_CLASS = "._aacl._aaco._aacu._aacx._aad7._aade"
 
+        self.DATE_CLASS = "._aacl._aaco._aacu._aacx._aad6._aade._aaqb"
+
         # GET INSTA USERNAME AND PASSWORD FROM AWS SECRETS MANAGER
         print(f"Getting Insta username and password from AWS Secrets Manager's secret '{name_aws_secret_insta}'...")
         try:
@@ -70,7 +72,7 @@ class InstaBot:
         print("\n---------------------------------Object initialized successfully---------------------------------\n")
 
     def check_page_post_loaded(self):
-        """If elemt is found return True"""
+        """If element is found return True"""
         try:
             self.driver.find_element(By.CSS_SELECTOR, self.POST_BODY_CLASS)
             return True
@@ -159,7 +161,7 @@ class InstaBot:
         return description
 
     def check_more_comments(self):
-        """If elemt is found return True"""
+        """If element is found return True"""
         try:
             self.driver.find_element(By.CSS_SELECTOR, self.COMMENTS_BOX).find_element(By.CSS_SELECTOR, self.MORE_COMMENTS_CLASS)
             return True
@@ -223,3 +225,7 @@ class InstaBot:
             print_error()
             
         return int(likes.split(" ")[0])
+    
+    def get_post_date(self):
+        """Get publishment date of post"""
+        return self.driver.find_element(By.CSS_SELECTOR, self.DATE_CLASS).find_element(By.TAG_NAME, "time").get_attribute("datetime")

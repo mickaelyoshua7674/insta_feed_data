@@ -42,6 +42,7 @@ for l in links:
         time.sleep(random.uniform(5,31))
         if bot.check_page_post_loaded():
             description = bot.get_post_description()
+            date = bot.get_post_date()
             comments = bot.get_post_comments()
             likes = bot.get_post_likes()
         else:
@@ -50,6 +51,7 @@ for l in links:
             bot.go_to_link(l)
             time.sleep(5)
             description = bot.get_post_description()
+            date = bot.get_post_date()
             comments = bot.get_post_comments()
             likes = bot.get_post_likes()
 
@@ -57,7 +59,8 @@ for l in links:
             "link": l,
             "description": description,
             "comments": comments,
-            "likes": likes
+            "likes": likes,
+            "date": date
         }
         print(f"Data collected from {l}")
         print("Saving data...")
