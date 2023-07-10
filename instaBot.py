@@ -5,8 +5,6 @@ from selenium.common.exceptions import NoSuchElementException
 import time
 import traceback
 import sys
-import boto3
-import ast
 import re
 
 def print_error():
@@ -17,7 +15,7 @@ def print_error():
     
 
 class InstaBot:
-    def __init__(self, target_username: str, chromedriver_path: str, name_aws_secret_insta: str) -> None:
+    def __init__(self, target_username: str, chromedriver_path: str) -> None:
         self.TARGET_USERNAME = target_username
         self.CHROMEDRIVER_PATH = chromedriver_path
         self.PUBLISHMENT_CLASS = "._aabd._aa8k._al3l"
@@ -57,20 +55,6 @@ class InstaBot:
 
         self.DATE_CLASS = "._aacl._aaco._aacu._aacx._aad6._aade._aaqb"
 
-        # GET INSTA USERNAME AND PASSWORD FROM AWS SECRETS MANAGER
-        print(f"Getting Insta username and password from AWS Secrets Manager's secret '{name_aws_secret_insta}'...")
-        try:
-            secrets_manager = boto3.session.Session().client(service_name="secretsmanager", region_name="sa-east-1")
-            secret_response_insta = secrets_manager.get_secret_value(SecretId=name_aws_secret_insta)
-            self.INSTA_USERNAME = ast.literal_eval(secret_response_insta["SecretString"])["username"]
-            self.INSTA_PASSWORD = ast.literal_eval(secret_response_insta["SecretString"])["password"]
-                                    # ast.literal_eval() turns a string to a dict
-            print("Insta username and password loaded.\n")
-        except:
-            print("Error getting secrets...\n")
-            print_error()
-        print("\n---------------------------------Object initialized successfully---------------------------------\n")
-
     def check_page_post_loaded(self) -> bool:
         """If element is found return True"""
         try:
@@ -102,16 +86,16 @@ class InstaBot:
                 print("Error initializing Chrome driver...\n")
                 print_error()
 
-    def login(self):
+    def login(self, login: str, password: str) -> None:
         """Make login into account passed when initialized the object class"""
         print("Entering the account...")
         try:
             self.driver.get("https://www.instagram.com/")
             time.sleep(3)
-            login = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
-            login.send_keys(self.INSTA_USERNAME) # fill username
+            login_field = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
+            login_field.send_keys(login) # fill username
             passw = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
-            passw.send_keys(self.INSTA_PASSWORD) # fill password
+            passw.send_keys(password) # fill password
             time.sleep(0.5)
             passw.send_keys(Keys.ENTER) # press Enter
             time.sleep(10)
@@ -224,7 +208,7 @@ class InstaBot:
             print("Error getting likes / Views / Liked By.")
             print_error()
             
-        return int(likes.split(" ")[0])
+        return int(re.sub("(\.)|(,)", "", likes.split(" ")[0]))
     
     def get_post_date(self) -> str:
         """Get publishment date of post (datetime)"""

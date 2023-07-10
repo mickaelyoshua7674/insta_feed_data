@@ -4,7 +4,6 @@ import time
 import os
 import random
 
-SECRET_INSTA = "mickaelyoshua_insta"
 CHROMEDRIVER_PATH = "chromedriver.exe"
 USERNAME = "prefjoaopessoa"
 
@@ -29,10 +28,12 @@ else: # if there is no data collected
     print("There is no data collected.\n")
 
 # INITIALIZING INSTABOT
+with open("secrets.txt", "r") as f:
+    login, password = f.read().split(",")
 start = time.time()
-bot = InstaBot(USERNAME, CHROMEDRIVER_PATH, SECRET_INSTA)
+bot = InstaBot(USERNAME, CHROMEDRIVER_PATH)
 bot.init_chromedriver(headless=True)
-bot.login()
+bot.login(login, password)
 
 # GET POSTS DATA
 for l in links:
