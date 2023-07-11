@@ -1,8 +1,5 @@
 from instaBot import InstaBot
-import json
-import time
-import os
-import random
+import json, time, os
 
 CHROMEDRIVER_PATH = "chromedriver.exe"
 USERNAME = "prefjoaopessoa"
@@ -40,7 +37,6 @@ for l in links:
     if l not in collected_links: # if it wasn't collected
         print(f"Collecting data from {l} ...")
         bot.go_to_link(l)
-        time.sleep(random.uniform(5,31))
         if bot.check_page_post_loaded():
             description = bot.get_post_description()
             date = bot.get_post_date()
@@ -50,7 +46,6 @@ for l in links:
             print("\nTime for reload page - 5min...\n")
             time.sleep(5*60)
             bot.go_to_link(l)
-            time.sleep(5)
             description = bot.get_post_description()
             date = bot.get_post_date()
             comments = bot.get_post_comments()

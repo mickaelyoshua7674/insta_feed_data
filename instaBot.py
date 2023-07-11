@@ -2,10 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
-import time
-import traceback
-import sys
-import re
+import time, traceback, sys, re, random
 
 def print_error():
     """Print the error message and exit script."""
@@ -55,10 +52,16 @@ class InstaBot:
 
         self.DATE_CLASS = "._aacl._aaco._aacu._aacx._aad6._aade._aaqb"
 
+    def random_sleep(self, i: int, f: int) -> None:
+        """Randomly choose a float number between i-f and sleep during that random time"""
+        time.sleep(random.uniform(i, f))
+
     def check_page_post_loaded(self) -> bool:
         """If element is found return True"""
         try:
+            self.random_sleep(1,3)
             self.driver.find_element(By.CSS_SELECTOR, self.POST_BODY_CLASS)
+            self.random_sleep(1,3)
             return True
         except NoSuchElementException:
             return False
@@ -91,14 +94,17 @@ class InstaBot:
         print("Entering the account...")
         try:
             self.driver.get("https://www.instagram.com/")
-            time.sleep(3)
+            self.random_sleep(5,7)
             login_field = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
+            self.random_sleep(1,3)
             login_field.send_keys(login) # fill username
+            self.random_sleep(1,3)
             passw = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
+            self.random_sleep(1,3)
             passw.send_keys(password) # fill password
-            time.sleep(0.5)
+            self.random_sleep(1,3)
             passw.send_keys(Keys.ENTER) # press Enter
-            time.sleep(10)
+            self.random_sleep(5,7)
             print("Login successfull.\n")
         except:
             print("Login failed...\n")
@@ -106,29 +112,32 @@ class InstaBot:
 
     def go_to_link(self, l: str):
         self.driver.get(l)
+        self.random_sleep(5,7)
 
     def driver_quit(self):
         self.driver.quit()
 
     def get_posts_link(self) -> list[str]:
         """Collect the link of all posts in profile target"""
-        self.driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}")
-        time.sleep(3)
         links = []
         publishments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
+        self.random_sleep(1,3)
         for p in publishments_obj:
             links.append(p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS).get_attribute("href"))
+            self.random_sleep(1,3)
         self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-        time.sleep(2)
+        self.random_sleep(2,3)
 
         count = 0
         while count < 15:
             new_publishments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
+            self.random_sleep(1,3)
             for p in new_publishments_obj:
                 if p not in publishments_obj:
                     links.append(p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS).get_attribute("href"))
+                    self.random_sleep(1,3)
             self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-            time.sleep(2)
+            self.random_sleep(2,3)
 
             if publishments_obj == new_publishments_obj:
                 count += 1
@@ -140,6 +149,7 @@ class InstaBot:
         """Get description from post"""
         try:
             description = self.driver.find_element(By.CSS_SELECTOR, self.DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
+            self.random_sleep(1,3)
         except NoSuchElementException:
             description = ""
         return description
@@ -147,7 +157,9 @@ class InstaBot:
     def check_more_comments(self) -> bool:
         """If element is found return True"""
         try:
+            self.random_sleep(1,3)
             self.driver.find_element(By.CSS_SELECTOR, self.COMMENTS_BOX).find_element(By.CSS_SELECTOR, self.MORE_COMMENTS_CLASS)
+            self.random_sleep(1,3)
             return True
         except NoSuchElementException:
             return False
@@ -156,12 +168,14 @@ class InstaBot:
         """load all comments and collect then"""
         while self.check_more_comments():
             self.driver.find_element(By.CSS_SELECTOR, self.COMMENTS_BOX).find_element(By.CSS_SELECTOR, self.MORE_COMMENTS_CLASS).click()
-            time.sleep(3)
+            self.random_sleep(2,3)
         try:
             comments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.COMMENTS_CLASS)
+            self.random_sleep(1,3)
             comments = []
             for c in comments_obj:
                 comments.append(c.find_element(By.CSS_SELECTOR, self.COMMENT_CLASS).text)
+                self.random_sleep(1,3)
         except NoSuchElementException:
             comments = []
         return comments
@@ -170,27 +184,31 @@ class InstaBot:
         """collect the number of likes in post"""
         try:
             t = self.driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
+            self.random_sleep(1,3)
             if re.search("like", t) or re.search("curti", t):
                 likes = t
             else:
                 liked_by_link = [i.get_attribute("href") for i in self.driver.find_elements(By.CSS_SELECTOR, self.OTHER_PEOPLE_CLASS) if re.search("liked_by", i.get_attribute("href"))][0]
+                self.random_sleep(1,3)
                 self.driver.get(liked_by_link)
-                time.sleep(3)
+                self.random_sleep(2,3)
                 people = []
                 people_liked_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)
+                self.random_sleep(1,3)
                 for p in people_liked_obj:
                     people.append(p)
                 self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-                time.sleep(2)
+                self.random_sleep(2,3)
 
                 count = 0
                 while count < 10:
                     new_people_liked_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)
+                    self.random_sleep(1,3)
                     for p in new_people_liked_obj:
                         if p not in people_liked_obj:
                             people.append(p)
                     self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-                    time.sleep(2)
+                    self.random_sleep(2,3)
 
                     if people_liked_obj == new_people_liked_obj:
                         count += 1
@@ -201,8 +219,9 @@ class InstaBot:
 
         except NoSuchElementException:
             self.driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].click()
-            time.sleep(1)
+            self.random_sleep(1,3)
             likes = self.driver.find_element(By.CSS_SELECTOR, "._aauu").text
+            self.random_sleep(1,3)
             
         except:
             print("Error getting likes / Views / Liked By.")
@@ -212,4 +231,6 @@ class InstaBot:
     
     def get_post_date(self) -> str:
         """Get publishment date of post (datetime)"""
-        return self.driver.find_element(By.CSS_SELECTOR, self.DATE_CLASS).find_element(By.TAG_NAME, "time").get_attribute("datetime")
+        date = self.driver.find_element(By.CSS_SELECTOR, self.DATE_CLASS).find_element(By.TAG_NAME, "time").get_attribute("datetime")
+        self.random_sleep(1,3)
+        return date
