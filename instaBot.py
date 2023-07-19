@@ -52,6 +52,19 @@ class InstaBot:
 
         self.DATE_CLASS = "._aacl._aaco._aacu._aacx._aad6._aade._aaqb"
 
+        self.FOLLOWBOX_CLASS = ".x9f619.xjbqb8w.x78zum5.x168nmei.x13lgxp2.x5pf9jr.xo71vjh.x1n2onr6.x1plvlek" + \
+                        ".xryxfnj.x1iyjqo2.x2lwn1j.xeuugli.xdt5ytf.xqjyukv.x1qjc9v5.x1oa3qoh.x1nhvcw1"
+        self.FOLLOW_CLASS = ".x1dm5mii.x16mil14.xiojian.x1yutycm.x1lliihq.x193iq5w.xh8yej3"
+
+    def get_follow(self):
+        c = 0
+        while c < 15:
+            last = self.driver.find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS).find_elements(By.CSS_SELECTOR, self.FOLLOW_CLASS)
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", last)
+            self.random_sleep(3,4)
+            if last == self.driver.find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS).find_elements(By.CSS_SELECTOR, self.FOLLOW_CLASS):
+                c += 1
+
     def random_sleep(self, i: int, f: int) -> None:
         """Randomly choose a float number between i-f and sleep during that random time"""
         time.sleep(random.uniform(i, f))
