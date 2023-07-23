@@ -30,7 +30,7 @@ for l in links:
         "comments": comments,
         "likes": likes
     })
-    print(f"Data collected from {l}")
+    print(f"Data collected from {l}\n")
 
 bot_tcepb.driver_quit()
 
@@ -65,7 +65,7 @@ for l in links:
         "comments": comments,
         "likes": likes
     })
-    print(f"Data collected from {l}")
+    print(f"Data collected from {l}\n")
 
 bot_pref_jampa.driver_quit()
 
