@@ -2,13 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
-import time
-import traceback
-import sys
-import boto3
-import ast
-import json
-import re
+import time, traceback, sys, re, random
 
 def print_error():
     """Print the error message and exit script."""
@@ -16,101 +10,9 @@ def print_error():
     print("Closing...")
     sys.exit()
     
-def get_post_description(driver, DESCRIPTION_CLASS):
-    try:
-        description = driver.find_element(By.CSS_SELECTOR, DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
-    except NoSuchElementException:
-        description = ""
-    return description
-
-def get_post_likes(driver, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS, OTHER_PEOPLE_CLASS):
-    try:
-        t = driver.find_element(By.CSS_SELECTOR, LIKES_CLASS).text
-        if re.search("like", t) or re.search("curti", t):
-            likes = t
-        else:
-            liked_by_link = [i.get_attribute("href") for i in driver.find_elements(By.CSS_SELECTOR, OTHER_PEOPLE_CLASS) if re.search("liked_by", i.get_attribute("href"))][0]
-            driver.get(liked_by_link)
-            time.sleep(3)
-            people = []
-            people_liked_obj = driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS)
-            for p in people_liked_obj:
-                people.append(p)
-            driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-            time.sleep(2)
-
-            count = 0
-            while count < 10:
-                new_people_liked_obj = driver.find_elements(By.CSS_SELECTOR, PEOPLE_LIKED_CLASS)
-                for p in new_people_liked_obj:
-                    if p not in people_liked_obj:
-                        people.append(p)
-                driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-                time.sleep(2)
-
-                if people_liked_obj == new_people_liked_obj:
-                    count += 1
-                
-                people_liked_obj = new_people_liked_obj
-            
-            likes = f"{len(people)} curtidas"
-
-    except NoSuchElementException:
-        driver.find_elements(By.CSS_SELECTOR, VIEWS_CLASS)[-1].click()
-        time.sleep(1)
-        likes = driver.find_element(By.CSS_SELECTOR, "._aauu").text
-        
-    except:
-        print("Error getting likes / Views / Liked By.")
-        print_error()
-
-    return likes
-    
-def get_post_comments(driver, COMMENTS_CLASS, COMMENT_CLASS):
-    try:
-        comments_obj = driver.find_elements(By.CSS_SELECTOR, COMMENTS_CLASS)
-        comments = []
-        for c in comments_obj:
-            comments.append(c.find_element(By.CSS_SELECTOR, COMMENT_CLASS).text)
-    except NoSuchElementException:
-        comments = []
-    return comments
-
-def get_posts_data(driver, publishments_obj, PUBLISHMENT_LINK_CLASS, DESCRIPTION_CLASS, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS, COMMENTS_CLASS, COMMENT_CLASS):
-    num_posts = 0
-    posts = []
-    for p in publishments_obj:
-        publish = p.find_element(By.CSS_SELECTOR, PUBLISHMENT_LINK_CLASS)
-        publish_link = publish.get_attribute("href")
-        num_posts += 1
-        print(f"Data collected from post: {publish_link}")
-        print(f"Number of data posts collected: {num_posts}")
-        publish.click()
-        time.sleep(1)
-
-        description = get_post_description(driver, DESCRIPTION_CLASS)
-        likes = get_post_likes(driver, LIKES_CLASS, VIEWS_CLASS, PEOPLE_LIKED_CLASS)
-        comments = get_post_comments(driver, COMMENTS_CLASS, COMMENT_CLASS)
-
-        body = {
-            "link": publish_link,
-            "description": description,
-            "likes": likes,
-            "comments": comments
-        }
-        posts.append(body)
-
-        driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.ESCAPE)
-    driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-
-def save_posts_data(TARGET_USERNAME, posts):
-    print("Saving json file...")
-    with open(f"{TARGET_USERNAME}.json", "w") as f:
-        json.dump({"username": TARGET_USERNAME, "publishments": posts}, f)
-    print("Saved.")
 
 class InstaBot:
-    def __init__(self, target_username: str, chromedriver_path: str, name_aws_secret_insta: str) -> None:
+    def __init__(self, target_username: str, chromedriver_path: str) -> None:
         self.TARGET_USERNAME = target_username
         self.CHROMEDRIVER_PATH = chromedriver_path
         self.PUBLISHMENT_CLASS = "._aabd._aa8k._al3l"
@@ -137,27 +39,50 @@ class InstaBot:
                                 ".xt0psk2.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5" + \
                                 ".x18d9i69.xkhd6sd.x16tdsg8.x1hl2dhg.xggy1nq.x1a2a7pz._a6hd"
         
+        self.POST_BODY_CLASS = ".x6s0dn4.x78zum5.xdt5ytf.xdj266r.xkrivgy.xat24cr.x1gryazu.x1n2onr6.xh8yej3"
+
+        self.COMMENTS_BOX = ".x9f619.x5yr21d.x10l6tqk.xh8yej3.xexx8yu.x4uap5.x18d9i69.xkhd6sd"
+        self.MORE_COMMENTS_CLASS = ".x9f619.xjbqb8w.x78zum5.x168nmei.x13lgxp2.x5pf9jr.xo71vjh.xdj266r" + \
+                                ".xat24cr.x1n2onr6.x1plvlek.xryxfnj.x1c4vz4f.x2lah0s.xdt5ytf" + \
+                                ".xqjyukv.x1qjc9v5.x1oa3qoh.xl56j7k"
+
         self.DESCRIPTION_CLASS = "._a9zs"
         self.COMMENTS_CLASS = "._a9ym"
         self.COMMENT_CLASS = "._aacl._aaco._aacu._aacx._aad7._aade"
 
-        # GET INSTA USERNAME AND PASSWORD FROM AWS SECRETS MANAGER
-        print(f"Getting Insta username and password from AWS Secrets Manager's secret '{name_aws_secret_insta}'...")
-        try:
-            secrets_manager = boto3.session.Session().client(service_name="secretsmanager", region_name="sa-east-1")
-            secret_response_insta = secrets_manager.get_secret_value(SecretId=name_aws_secret_insta)
-            self.INSTA_USERNAME = ast.literal_eval(secret_response_insta["SecretString"])["username"]
-            self.INSTA_PASSWORD = ast.literal_eval(secret_response_insta["SecretString"])["password"]
-                                    # ast.literal_eval() turns a string to a dict
-            print("Insta username and password loaded.\n")
-        except:
-            print("Error getting secrets...\n")
-            print_error()
-        print("\n---------------------------------Object initialized successfully---------------------------------\n")
+        self.DATE_CLASS = "._aacl._aaco._aacu._aacx._aad6._aade._aaqb"
 
-    def init_chromedriver(self, headless=True):
+        self.FOLLOWBOX_CLASS = ".x9f619.xjbqb8w.x78zum5.x168nmei.x13lgxp2.x5pf9jr.xo71vjh.x1n2onr6.x1plvlek" + \
+                        ".xryxfnj.x1iyjqo2.x2lwn1j.xeuugli.xdt5ytf.xqjyukv.x1qjc9v5.x1oa3qoh.x1nhvcw1"
+        self.FOLLOW_CLASS = ".x1dm5mii.x16mil14.xiojian.x1yutycm.x1lliihq.x193iq5w.xh8yej3"
+
+    def get_follow(self):
+        c = 0
+        while c < 15:
+            last = self.driver.find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS).find_elements(By.CSS_SELECTOR, self.FOLLOW_CLASS)
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", last)
+            self.random_sleep(3,4)
+            if last == self.driver.find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS).find_elements(By.CSS_SELECTOR, self.FOLLOW_CLASS):
+                c += 1
+
+    def random_sleep(self, i: int, f: int) -> None:
+        """Randomly choose a float number between i-f and sleep during that random time"""
+        time.sleep(random.uniform(i, f))
+
+    def check_page_post_loaded(self) -> bool:
+        """If element is found return True"""
+        try:
+            self.random_sleep(1,3)
+            self.driver.find_element(By.CSS_SELECTOR, self.POST_BODY_CLASS)
+            self.random_sleep(1,3)
+            return True
+        except NoSuchElementException:
+            return False
+
+    def init_chromedriver(self, headless: bool=True):
+        """Start the chromedriver"""
+        print("Initializing Chrome driver...")
         if headless == True:
-            print("Initializing Chrome driver...")
             try:
                 op = webdriver.ChromeOptions()
                 op.add_argument("headless") # don't open a Chrome window
@@ -168,7 +93,6 @@ class InstaBot:
                 print_error()
         
         elif headless == False:
-            print("Initializing Chrome driver...")
             try:
                 # op = webdriver.ChromeOptions()
                 # op.add_argument("headless") # don't open a Chrome window
@@ -178,47 +102,55 @@ class InstaBot:
                 print("Error initializing Chrome driver...\n")
                 print_error()
 
-    def login(self):
+    def login(self, login: str, password: str) -> None:
+        """Make login into account passed when initialized the object class"""
         print("Entering the account...")
         try:
             self.driver.get("https://www.instagram.com/")
-            time.sleep(3)
-            login = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
-            login.send_keys(self.INSTA_USERNAME) # fill username
+            self.random_sleep(5,7)
+            login_field = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
+            self.random_sleep(1,3)
+            login_field.send_keys(login) # fill username
+            self.random_sleep(1,3)
             passw = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
-            passw.send_keys(self.INSTA_PASSWORD) # fill password
-            time.sleep(0.5)
+            self.random_sleep(1,3)
+            passw.send_keys(password) # fill password
+            self.random_sleep(1,3)
             passw.send_keys(Keys.ENTER) # press Enter
-            time.sleep(10)
+            self.random_sleep(5,7)
             print("Login successfull.\n")
         except:
             print("Login failed...\n")
             print_error()
 
-    def go_to_link(self, l):
+    def go_to_link(self, l: str):
         self.driver.get(l)
+        self.random_sleep(5,7)
 
     def driver_quit(self):
         self.driver.quit()
 
-    def get_posts_link(self):
-        self.driver.get(f"https://www.instagram.com/{self.TARGET_USERNAME}")
-        time.sleep(3)
+    def get_posts_link(self) -> list[str]:
+        """Collect the link of all posts in profile target"""
         links = []
         publishments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
+        self.random_sleep(1,3)
         for p in publishments_obj:
             links.append(p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS).get_attribute("href"))
+            self.random_sleep(1,3)
         self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-        time.sleep(2)
+        self.random_sleep(2,3)
 
         count = 0
         while count < 15:
             new_publishments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
+            self.random_sleep(1,3)
             for p in new_publishments_obj:
                 if p not in publishments_obj:
                     links.append(p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS).get_attribute("href"))
+                    self.random_sleep(1,3)
             self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-            time.sleep(2)
+            self.random_sleep(2,3)
 
             if publishments_obj == new_publishments_obj:
                 count += 1
@@ -227,62 +159,91 @@ class InstaBot:
         return links
     
     def get_post_description(self):
+        """Get description from post"""
         try:
             description = self.driver.find_element(By.CSS_SELECTOR, self.DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
+            self.random_sleep(1,3)
         except NoSuchElementException:
             description = ""
         return description
-    
-    def get_post_comments(self):
+
+    def check_more_comments(self) -> bool:
+        """If element is found return True"""
+        try:
+            self.random_sleep(1,3)
+            self.driver.find_element(By.CSS_SELECTOR, self.COMMENTS_BOX).find_element(By.CSS_SELECTOR, self.MORE_COMMENTS_CLASS)
+            self.random_sleep(1,3)
+            return True
+        except NoSuchElementException:
+            return False
+
+    def get_post_comments(self) -> list[str]:
+        """load all comments and collect then"""
+        while self.check_more_comments():
+            self.driver.find_element(By.CSS_SELECTOR, self.COMMENTS_BOX).find_element(By.CSS_SELECTOR, self.MORE_COMMENTS_CLASS).click()
+            self.random_sleep(2,3)
         try:
             comments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.COMMENTS_CLASS)
+            self.random_sleep(1,3)
             comments = []
             for c in comments_obj:
                 comments.append(c.find_element(By.CSS_SELECTOR, self.COMMENT_CLASS).text)
+                self.random_sleep(1,3)
         except NoSuchElementException:
             comments = []
         return comments
     
-    def get_post_likes(self):
+    def get_post_likes(self) -> int:
+        """collect the number of likes in post"""
         try:
             t = self.driver.find_element(By.CSS_SELECTOR, self.LIKES_CLASS).text
+            self.random_sleep(1,3)
             if re.search("like", t) or re.search("curti", t):
                 likes = t
             else:
                 liked_by_link = [i.get_attribute("href") for i in self.driver.find_elements(By.CSS_SELECTOR, self.OTHER_PEOPLE_CLASS) if re.search("liked_by", i.get_attribute("href"))][0]
+                self.random_sleep(1,3)
                 self.driver.get(liked_by_link)
-                time.sleep(3)
+                self.random_sleep(2,3)
                 people = []
                 people_liked_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)
+                self.random_sleep(1,3)
                 for p in people_liked_obj:
                     people.append(p)
                 self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-                time.sleep(2)
+                self.random_sleep(2,3)
 
                 count = 0
                 while count < 10:
                     new_people_liked_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PEOPLE_LIKED_CLASS)
+                    self.random_sleep(1,3)
                     for p in new_people_liked_obj:
                         if p not in people_liked_obj:
                             people.append(p)
                     self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
-                    time.sleep(2)
+                    self.random_sleep(2,3)
 
                     if people_liked_obj == new_people_liked_obj:
                         count += 1
                     
                     people_liked_obj = new_people_liked_obj
                 
-                likes = f"{len(people)} curtidas"
+                likes = f"{len(people)} likes"
 
         except NoSuchElementException:
             self.driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].click()
-            time.sleep(1)
+            self.random_sleep(1,3)
             likes = self.driver.find_element(By.CSS_SELECTOR, "._aauu").text
-            print(f"Views Likes - {likes}")
+            self.random_sleep(1,3)
             
         except:
             print("Error getting likes / Views / Liked By.")
             print_error()
             
-        return likes
+        return int(re.sub("(\.)|(,)", "", likes.split(" ")[0]))
+    
+    def get_post_date(self) -> str:
+        """Get publishment date of post (datetime)"""
+        date = self.driver.find_element(By.CSS_SELECTOR, self.DATE_CLASS).find_element(By.TAG_NAME, "time").get_attribute("datetime")
+        self.random_sleep(1,3)
+        return date
