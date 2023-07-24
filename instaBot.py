@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 import time, traceback, sys, re, random
+from typing import List
 
 def print_error():
     """Print the error message and exit script."""
@@ -52,18 +53,41 @@ class InstaBot:
 
         self.DATE_CLASS = "._aacl._aaco._aacu._aacx._aad6._aade._aaqb"
 
-        self.FOLLOWBOX_CLASS = ".x9f619.xjbqb8w.x78zum5.x168nmei.x13lgxp2.x5pf9jr.xo71vjh.x1n2onr6.x1plvlek" + \
-                        ".xryxfnj.x1iyjqo2.x2lwn1j.xeuugli.xdt5ytf.xqjyukv.x1qjc9v5.x1oa3qoh.x1nhvcw1"
+        self.FOLLOWBOX_CLASS_1 = ".x7r02ix.xf1ldfh.x131esax.xdajt7p.xxfnqb6.xb88tzc.xw2csxc.x1odjw0f.x5fp0pe"
+        self.FOLLOWBOX_CLASS_2 = ".x9f619.xjbqb8w.x78zum5.x168nmei.x13lgxp2.x5pf9jr.xo71vjh.x1n2onr6.x1plvlek" + \
+                                ".xryxfnj.x1iyjqo2.x2lwn1j.xeuugli.xdt5ytf.xqjyukv.x1qjc9v5.x1oa3qoh.x1nhvcw1"
         self.FOLLOW_CLASS = ".x1dm5mii.x16mil14.xiojian.x1yutycm.x1lliihq.x193iq5w.xh8yej3"
+        self.FOLLOWER_CLASS = ".x9f619.xjbqb8w.x1rg5ohu.x168nmei.x13lgxp2.x5pf9jr.xo71vjh.x1n2onr6" + \
+                            ".x1plvlek.xryxfnj.x1c4vz4f.x2lah0s.x1q0g3np.xqjyukv.x6s0dn4.x1oa3qoh.x1nhvcw1"
 
-    def get_follow(self):
-        c = 0
-        while c < 15:
-            last = self.driver.find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS).find_elements(By.CSS_SELECTOR, self.FOLLOW_CLASS)
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", last)
-            self.random_sleep(3,4)
-            if last == self.driver.find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS).find_elements(By.CSS_SELECTOR, self.FOLLOW_CLASS):
-                c += 1
+    def get_follow(self) -> List[str]:
+        """Get a list of all follow"""
+        print("Getting list...\nCount:")
+        follow = set()
+        objs = self.driver.find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS_1)\
+            .find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS_2)\
+            .find_elements(By.CSS_SELECTOR, self.FOLLOW_CLASS)
+        self.random_sleep(1,3)
+        for f in objs:
+            follow.add(f.find_element(By.CSS_SELECTOR, self.FOLLOWER_CLASS).text)
+        last_len = len(follow)
+        count = 0
+        while count < 12:
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", objs[-1])
+            self.random_sleep(2,4)
+            objs = self.driver.find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS_1)\
+                .find_element(By.CSS_SELECTOR, self.FOLLOWBOX_CLASS_2)\
+                .find_elements(By.CSS_SELECTOR, self.FOLLOW_CLASS)
+            self.random_sleep(1,3)
+            for f in objs:
+                follow.add(f.find_element(By.CSS_SELECTOR, self.FOLLOWER_CLASS).text)
+            new_len = len(follow)
+            if last_len == new_len:
+                count += 1
+            print(new_len)
+            last_len = new_len
+        print("Finished.\n")
+        return list(follow)
 
     def random_sleep(self, i: int, f: int) -> None:
         """Randomly choose a float number between i-f and sleep during that random time"""
@@ -80,7 +104,7 @@ class InstaBot:
             return False
 
     def init_chromedriver(self, headless: bool=True):
-        """Start the chromedriver"""
+        """Start the chromedriver object"""
         print("Initializing Chrome driver...")
         if headless == True:
             try:
@@ -123,14 +147,16 @@ class InstaBot:
             print("Login failed...\n")
             print_error()
 
-    def go_to_link(self, l: str):
+    def go_to_link(self, l: str) -> None:
+        """Go to given link"""
         self.driver.get(l)
         self.random_sleep(5,7)
 
-    def driver_quit(self):
+    def driver_quit(self) -> None:
+        """Quit the driver instance"""
         self.driver.quit()
 
-    def get_posts_link(self) -> list[str]:
+    def get_posts_link(self) -> List[str]:
         """Collect the link of all posts in profile target"""
         links = []
         publishments_obj = self.driver.find_elements(By.CSS_SELECTOR, self.PUBLISHMENT_CLASS)
@@ -158,7 +184,7 @@ class InstaBot:
             publishments_obj = new_publishments_obj
         return links
     
-    def get_post_description(self):
+    def get_post_description(self) -> str:
         """Get description from post"""
         try:
             description = self.driver.find_element(By.CSS_SELECTOR, self.DESCRIPTION_CLASS).find_element(By.TAG_NAME, "h1").text
@@ -177,7 +203,7 @@ class InstaBot:
         except NoSuchElementException:
             return False
 
-    def get_post_comments(self) -> list[str]:
+    def get_post_comments(self) -> List[str]:
         """load all comments and collect then"""
         while self.check_more_comments():
             self.driver.find_element(By.CSS_SELECTOR, self.COMMENTS_BOX).find_element(By.CSS_SELECTOR, self.MORE_COMMENTS_CLASS).click()
