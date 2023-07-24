@@ -9,17 +9,20 @@ with open("secrets.txt", "r") as f:
     login, password = f.read().split(",")
 start = time.time()
 bot = InstaBot(USERNAME, CHROMEDRIVER_PATH)
-bot.init_chromedriver(headless=False)
+bot.init_chromedriver()
 bot.login(login, password)
 
 bot.go_to_link(f"https://www.instagram.com/{USERNAME}/followers/")
 followers = bot.get_follow()
-with open("followers.json", "w") as f:
+with open("data/followers.json", "w") as f:
     json.dump(followers, f)
 
 bot.go_to_link(f"https://www.instagram.com/{USERNAME}/following/")
 following = bot.get_follow()
-with open("following.json", "w") as f:
+with open("data/following.json", "w") as f:
     json.dump(following, f)
+
+with open("data/not_follow_back.json", "w") as f:
+    json.dump(["https://www.instagram.com/"+f for f in following if f not in followers], f)
 
 print(f"Execution time: {time.time()-start}s / {(time.time()-start)/60}min / {((time.time()-start)/60)/60}hrs")

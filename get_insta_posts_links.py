@@ -14,7 +14,7 @@ bot_tcepb.login()
 links = bot_tcepb.get_posts_link()
 bot_tcepb.driver_quit()
 
-with open(f"{USERNAME_TCEPB}_posts_link.json", "w") as f:
+with open(f"data/{USERNAME_TCEPB}_posts_link.json", "w") as f:
     json.dump(links, f)
 
 print(f"Execution time: {time.time()-start}s / {(time.time()-start)/60}min / {((time.time()-start)/60)/60}hrs")

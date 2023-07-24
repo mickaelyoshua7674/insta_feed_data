@@ -7,19 +7,19 @@ USERNAME = "tcepb"
 start = time.time()
 # GETTING LINKS OF POSTS
 print("Getting posts links...")
-with open(f"{USERNAME}_posts_link.json", "r") as f:
+with open(f"data/{USERNAME}_posts_link.json", "r") as f:
     links = json.load(f)
 print("Posts links collected.\n")
 
 # GET LINKS WITH DATA ALREADY COLLECTED
 print("Getting link with data collected...")
-if os.path.exists(f"{USERNAME}_posts_data.json"): # if there is data collected
-    with open(f"{USERNAME}_posts_data.json", "r") as f:
+if os.path.exists(f"data/{USERNAME}_posts_data.json"): # if there is data collected
+    with open(f"data/{USERNAME}_posts_data.json", "r") as f:
         data = json.load(f)
     collected_links = [l["link"] for l in data]
     print("Links collected.\n")
 else: # if there is no data collected
-    with open(f"{USERNAME}_posts_data.json", "w") as f:
+    with open(f"data/{USERNAME}_posts_data.json", "w") as f:
         json.dump([], f)
     collected_links = []
     print("There is no data collected.\n")
@@ -60,9 +60,9 @@ for l in links:
         }
         print(f"Data collected from {l}")
         print("Saving data...")
-        with open(f"{USERNAME}_posts_data.json", "r") as f:
+        with open(f"data/{USERNAME}_posts_data.json", "r") as f:
             data = json.load(f)
-        with open(f"{USERNAME}_posts_data.json", "w") as f: # append data and save
+        with open(f"data/{USERNAME}_posts_data.json", "w") as f: # append data and save
             data.append(body)
             json.dump(data, f)
         print("Data saved.\n")
