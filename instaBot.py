@@ -1,16 +1,11 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import NoSuchElementException
-import time, traceback, sys, re, random
+import time, re, random
 from typing import List
 
-def print_error():
-    """Print the error message and exit script."""
-    traceback.print_exc()
-    print("Closing...")
-    sys.exit()
-    
 
 class InstaBot:
     def __init__(self, target_username: str, chromedriver_path: str) -> None:
@@ -106,46 +101,32 @@ class InstaBot:
     def init_chromedriver(self, headless: bool=True):
         """Start the chromedriver object"""
         print("Initializing Chrome driver...")
+        sc = Service(executable_path=self.CHROMEDRIVER_PATH)
         if headless == True:
-            try:
-                op = webdriver.ChromeOptions()
-                op.add_argument("headless") # don't open a Chrome window
-                self.driver = webdriver.Chrome(executable_path=self.CHROMEDRIVER_PATH, options=op)
-                print("Chrome driver initialized.\n")
-            except:
-                print("Error initializing Chrome driver...\n")
-                print_error()
-        
+            op = webdriver.ChromeOptions()
+            op.add_argument("headless") # don't open a Chrome window
+            self.driver = webdriver.Chrome(service=sc, options=op)
         elif headless == False:
-            try:
-                # op = webdriver.ChromeOptions()
-                # op.add_argument("headless") # don't open a Chrome window
-                self.driver = webdriver.Chrome(executable_path=self.CHROMEDRIVER_PATH)#, options=op)
-                print("Chrome driver initialized.\n")
-            except:
-                print("Error initializing Chrome driver...\n")
-                print_error()
+            self.driver = webdriver.Chrome(service=sc)
+
+        print("Chrome driver initialized.\n")
 
     def login(self, login: str, password: str) -> None:
         """Make login into account passed when initialized the object class"""
         print("Entering the account...")
-        try:
-            self.driver.get("https://www.instagram.com/")
-            self.random_sleep(5,7)
-            login_field = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
-            self.random_sleep(1,3)
-            login_field.send_keys(login) # fill username
-            self.random_sleep(1,3)
-            passw = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
-            self.random_sleep(1,3)
-            passw.send_keys(password) # fill password
-            self.random_sleep(1,3)
-            passw.send_keys(Keys.ENTER) # press Enter
-            self.random_sleep(5,7)
-            print("Login successfull.\n")
-        except:
-            print("Login failed...\n")
-            print_error()
+        self.driver.get("https://www.instagram.com/")
+        self.random_sleep(5,7)
+        login_field = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input')
+        self.random_sleep(1,3)
+        login_field.send_keys(login) # fill username
+        self.random_sleep(1,3)
+        passw = self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input')
+        self.random_sleep(1,3)
+        passw.send_keys(password) # fill password
+        self.random_sleep(1,3)
+        passw.send_keys(Keys.ENTER) # press Enter
+        self.random_sleep(5,7)
+        print("Login successfull.\n")
 
     def go_to_link(self, l: str) -> None:
         """Go to given link"""
@@ -163,7 +144,6 @@ class InstaBot:
         self.random_sleep(1,3)
         for p in publishments_obj:
             links.append(p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS).get_attribute("href"))
-            self.random_sleep(1,3)
         self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
         self.random_sleep(2,3)
 
@@ -174,7 +154,6 @@ class InstaBot:
             for p in new_publishments_obj:
                 if p not in publishments_obj:
                     links.append(p.find_element(By.CSS_SELECTOR, self.PUBLISHMENT_LINK_CLASS).get_attribute("href"))
-                    self.random_sleep(1,3)
             self.driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
             self.random_sleep(2,3)
 
@@ -214,7 +193,6 @@ class InstaBot:
             comments = []
             for c in comments_obj:
                 comments.append(c.find_element(By.CSS_SELECTOR, self.COMMENT_CLASS).text)
-                self.random_sleep(1,3)
         except NoSuchElementException:
             comments = []
         return comments
@@ -255,18 +233,14 @@ class InstaBot:
                     people_liked_obj = new_people_liked_obj
                 
                 likes = f"{len(people)} likes"
+            return int(re.sub("(\.)|(,)", "", likes.split(" ")[0]))
 
         except NoSuchElementException:
             self.driver.find_elements(By.CSS_SELECTOR, self.VIEWS_CLASS)[-1].click()
             self.random_sleep(1,3)
             likes = self.driver.find_element(By.CSS_SELECTOR, "._aauu").text
             self.random_sleep(1,3)
-            
-        except:
-            print("Error getting likes / Views / Liked By.")
-            print_error()
-            
-        return int(re.sub("(\.)|(,)", "", likes.split(" ")[0]))
+            return int(re.sub("(\.)|(,)", "", likes.split(" ")[0]))
     
     def get_post_date(self) -> str:
         """Get publishment date of post (datetime)"""
